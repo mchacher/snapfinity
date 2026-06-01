@@ -1,56 +1,65 @@
 # Overnight log & morning questions
 
-Autonomous overnight session (2026-06-01 → 02). Latitude: **maximum**, **auto-merge** on
-green CI, **tests on everything**, **UI = design system first** (clean, CAD-suited).
-This file is the morning briefing — read the **Questions** section first. (Transient; delete
-once consumed.)
+Autonomous session (2026-06-01 → 02). Latitude **maximum**, **auto-merge** on green CI,
+**tests on everything**, **UI = design system first**. Read **Questions** first. (Transient —
+delete once consumed.)
 
-## Done tonight
+## ✅ Done tonight (all merged to master, CI green)
 
-| It | Title | Status |
-| -- | ----- | ------ |
-| 4 | Real Gridfinity foot + stacking lip, parametric pitch 20–84 mm, no magnets | ✅ merged (PR #4) |
+| It | Title | PR |
+| -- | ----- | -- |
+| 4 | Real Gridfinity foot + stacking lip, parametric pitch **20–84 mm**, no magnets | #4 |
+| 5 | Polygon **clearance offset** (clipper-lib), pure `core/` | #5 |
+| 3 | **Tool-shaped pocket** cut into the bin (+ `hollow` option) | #6 |
 
-(Earlier today: it 0 scaffold, it 1 calibration/sizing, it 2 CAD spike — all merged.)
+**Milestone:** the **CAD half of the pipeline is complete** — from a 2-D polygon we now
+produce a real Gridfinity bin with a tool-shaped cavity, exportable as STL. 33 tests green.
+The remaining half is **vision (photo → polygon)** and the **UI**.
 
-## Decisions I took autonomously (veto in the morning)
+### Notable fixes / findings
+- **OC meshing fix:** the `{ optimisation: 'commonFace' }` fuse flag left coincident faces
+  that broke tessellation on a solid body → dropped it (plain `.fuse()`). Hollow bin still
+  meshes; pocketed bin now exports valid STL.
+- **STL size:** detailed foot/lip → large meshes (~17 MB for 2×1). Needs mesh-tolerance
+  decimation before web/print (Q2).
 
-- **Foot/lip = adapted from replicad's official Gridfinity example** (MIT, credited in `bin.ts`),
-  rather than reimplementing — it's our exact stack and proven.
-- **Pitch range 20–84 mm** (continuous, validated). Below ~20 the foot tapers overlap.
-- **Stacking lip default ON**, parametric (`includeLip`).
-- **Sample generator** = `tools/cad/sample.ts` run via `tsx` (imports the real model — no
-  duplication), replacing the throwaway `.mjs`.
-- **TOP_RISE = 3.63 mm** measured constant for the top profile (pitch/lip-independent).
+## Decisions I took (veto in the morning)
+- Foot/lip **adapted from replicad's MIT example** (credited), not reimplemented.
+- **Pitch range 20–84 mm**, continuous, validated.
+- **Lip default on**, parametric.
+- **clipper-lib** for offset (pure JS, like pyclipper); minimal ambient types added.
+- **Dropped `commonFace`** on fuses (meshing robustness; slightly heavier meshes — see Q2).
+- Sample generator = `tools/cad/sample.ts` via `tsx` (imports the real model, no duplication).
 
-## ⚠️ Questions for you (each has my default — just confirm or redirect)
+## Why I stopped before UI + vision
+I deliberately did **not** build the UI or vision blind. Both need your input that's much
+better given with you awake: UI **design preferences** + **visual** verification, and vision
+needs the **ML model choice** + **mask validation** against your photos. I finished the
+fully-testable CAD pipeline instead. The questions below unblock the rest — answer them and I
+go straight into UI (design system first) + vision.
 
-1. **Foot fit on real baseplates** *(most important)*. The replicad socket is **5.0 mm** tall
-   (big taper 2.4) vs the **standard 4.75 mm** (2.15). Your existing baseplates are presumably
-   standard. → *Default plan:* I add a profile option and you **print-test a 1×1** and tell me
-   if it seats. Do you want me to switch to the exact-spec 4.75 profile now, or keep replicad's
-   and fit-test first?
-2. **Mesh resolution / STL size.** A 2×1 bin exports ~17 MB (fine detail). → *Default:* I'll add
-   a mesh tolerance so STLs are printer- and web-friendly (~hundreds of KB). OK?
-3. **Pocket depth (it 3).** A photo gives the 2-D footprint but **not the object's thickness**.
-   → *Default:* pocket = full usable depth (down to a thin floor), with an optional manual depth.
-   Or do you want a fixed/limited pocket depth?
-4. **UI design system (it 4)** — I'll start it tonight (build only; you eyeball in the morning):
+## ⚠️ Questions for you (each has my default — confirm or redirect)
+
+1. **Foot fit on real baseplates** *(most important)*. replicad's socket is **5.0 mm** tall
+   vs the **standard 4.75 mm**. → *Default:* print-test a 1×1 and tell me if it seats; if not,
+   I switch to the exact-spec 4.75 profile. Want me to switch now, or fit-test first?
+2. **Mesh resolution / STL size.** 2×1 ≈ 17 MB. → *Default:* add a mesh tolerance so STLs are
+   printer/web-friendly (~hundreds of KB). OK?
+3. **Pocket depth.** A photo gives the 2-D shape, not thickness. → *Default:* pocket = full
+   usable depth minus a 1 mm floor, with an optional manual depth. OK, or a fixed depth?
+4. **UI design system (it 4).** Confirmed: **React**. Remaining prefs:
    - Theme: **light, clean, single accent** (default) — or dark / auto?
+   - Accent colour? (default: calm blue-teal)
    - UI language: **FR + EN toggle** (default) — or one only?
-   - Accent colour preference? (default: a calm blue-teal)
-5. **Token OD.** Use the **nominal 76.2 mm** (default) or do you have a **caliper-measured** OD
-   of your printed token for better calibration?
-6. **Segmentation model (it 7).** Start with **U²-Net / RMBG** matting via onnxruntime-web.
-   The model is a downloaded `.onnx` (a few MB–tens of MB). → *Default:* fetch from a CDN at
-   runtime (keeps the repo light). OK, or embed it in the repo?
-7. **Ground-truth masks.** `dataset/truth/` is empty. → *Default:* tonight I generate ML masks
-   on your 10 photos; you **eyeball them** in the morning and we promote the good ones to truth/.
-8. **Hosting.** Set up **GitHub Pages** deploy now, or later? (default: later, once there's a UI).
-9. **Offset default.** Printing-clearance offset default **1.0 mm** (the oracle's value), exposed
-   in the UI. OK?
+5. **Token OD.** Nominal **76.2 mm** (default) or a **caliper-measured** OD of your printed token?
+6. **Segmentation model (it 7).** Matting via onnxruntime-web (U²-Net / RMBG). The `.onnx` is a
+   few–tens of MB. → *Default:* fetch from a CDN at runtime (repo stays light). Embed instead?
+7. **Ground-truth masks.** `dataset/truth/` is empty. → *Default:* I generate ML masks on your
+   10 photos; you eyeball them and we promote good ones to truth/. OK?
+8. **Hosting.** GitHub Pages now or later? (default: later, once there's a UI).
+9. **Offset default.** Printing-clearance default **1.0 mm** (oracle's value), exposed in the UI. OK?
 
-## What I'm NOT deciding without you
-
-Anything above marked with a real fork. I'll build toward sensible defaults and flag each
-spot; nothing is hard to revert (clean squash history).
+## State of the repo
+- Pipeline (synthetic input → STL): `core/calibration` · `core/sizing` · `core/offset` ·
+  `cad/bin` (foot+lip, pitch 20–84) · `cad/pocket`. All unit-tested (33 tests).
+- Build/CI green. Next branches will start from `master`.
