@@ -70,5 +70,20 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 
 ## Build & run
 
-> Filled in by the first feature iteration that scaffolds the Vite app. The project is
-> currently at the **foundation** stage (methodology + architecture only, no app code yet).
+```bash
+npm install        # install dev deps (Node 20+)
+npm run dev        # Vite dev server
+npm run build      # production build → dist/
+npm run preview    # preview the production build
+
+npm run typecheck  # tsc --noEmit (strict)
+npm run lint       # eslint
+npm test           # vitest run (what CI runs)
+npm run test:watch # vitest in watch mode
+```
+
+**Code layout.** `src/core/` holds **pure logic** (no WASM, no DOM) — fully unit-tested
+(`*.test.ts` beside the source). WASM adapters (`src/adapters/` for opencv.js / replicad /
+three.js / clipper) and the UI (`src/ui/`) arrive in their own iterations and stay thin
+around `core/`. CI (`.github/workflows/ci.yml`) runs typecheck + lint + test + build on
+every push and PR.

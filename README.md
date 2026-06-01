@@ -32,7 +32,21 @@ All client-side: Vite · opencv.js · clipper · replicad (OpenCascade WASM) · 
 Gridfinity base primitives are baked offline in Python (cqgridfinity). Hosted as a
 static site.
 
+## Development
+
+```bash
+npm install     # Node 20+
+npm run dev     # Vite dev server
+npm test        # vitest
+npm run build   # production build → dist/
+```
+
+`src/core/` is pure, unit-tested logic; WASM (opencv.js, replicad, three.js, clipper) and
+UI come in later iterations as thin adapters around it. CI runs typecheck + lint + test +
+build on every push and PR.
+
 ## Status & roadmap
 
-See [docs/specs-index.md](docs/specs-index.md). Development follows a specs-first,
-gate-driven workflow (see [CLAUDE.md](CLAUDE.md)).
+Foundation + scaffold in place; product features are built iteration by iteration — see
+[docs/roadmap.md](docs/roadmap.md) and [docs/specs-index.md](docs/specs-index.md).
+Development follows a specs-first, gate-driven workflow (see [CLAUDE.md](CLAUDE.md)).
