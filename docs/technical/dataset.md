@@ -28,9 +28,9 @@ Aim to spread samples across these axes — the hard cases matter most.
 
 | Axis           | Values                                                            |
 | -------------- | ---------------------------------------------------------------- |
-| **background** | `white_paper` · `cutting_mat` · `wood` · `dark` · `cluttered`     |
+| **background** | `white_paper` · `cutting_mat` · `wood` · `light_table` · `dark` · `cluttered` |
 | **lighting**   | `bright` · `dim` · `raking` (hard shadows) · `mixed`              |
-| **material**   | `matte` · `chrome` (reflective — hard) · `dark` (on dark bg) · `transparent` |
+| **material**   | `matte` · `glossy` · `chrome` (reflective — hard) · `dark` (on dark bg) · `transparent` · `colorful` |
 | **shape**      | `thin` (screwdriver, allen keys) · `bulky` · `perforated` (scissors) · `multipart` |
 
 ## Layout

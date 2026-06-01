@@ -1,1 +1,11 @@
 id,file,object,background,lighting,material,shape,token,truth,source,notes
+airpods-wood-01,raw/airpods-wood-01.jpeg,airpods_case,wood,bright,glossy,bulky,yes,,phone-2026-06,white glossy case on warm wood
+caliper-chrome-diag-01,raw/caliper-chrome-diag-01.jpeg,caliper,wood,bright,chrome,thin,yes,,phone-2026-06,reflective steel + black body + blue scale; diagonal
+charger-dark-01,raw/charger-dark-01.jpeg,usb_charger,light_table,bright,dark,bulky,yes,,phone-2026-06,black object on light table; arm + tiled floor at edges
+tape-measure-chrome-01,raw/tape-measure-chrome-01.jpeg,tape_measure,light_table,bright,chrome,bulky,yes,,phone-2026-06,chrome body + yellow label; clutter at edges; near table edge
+ruler-alu-diag-01,raw/ruler-alu-diag-01.jpeg,scale_ruler,light_table,bright,chrome,thin,yes,,phone-2026-06,reflective aluminium ruler; diagonal; clutter at edges
+ruler-alu-horiz-01,raw/ruler-alu-horiz-01.jpeg,scale_ruler,light_table,bright,chrome,thin,yes,,phone-2026-06,reflective aluminium ruler; horizontal; clutter at edges
+tape-dispenser-dark-01,raw/tape-dispenser-dark-01.jpeg,tape_dispenser,wood,bright,dark,bulky,yes,,phone-2026-06,black dispenser on wood; jeans at corner
+tape-roll-lowcontrast-01,raw/tape-roll-lowcontrast-01.jpeg,tape_roll,light_table,bright,matte,bulky,yes,,phone-2026-06,white/light roll on light surface — LOW CONTRAST; clutter at edges
+correction-tape-tipex-01,raw/correction-tape-tipex-01.jpeg,correction_tape,wood,bright,transparent,thin,yes,,phone-2026-06,small transparent + red/blue Tipp-Ex on wood
+glue-stick-uhu-01,raw/glue-stick-uhu-01.jpeg,glue_stick,light_table,bright,colorful,bulky,yes,,phone-2026-06,yellow UHU label + white cap; clutter at edges
