@@ -61,8 +61,9 @@ detection on real photos. The product is built **once**, in WASM.
 - **Footprint** snaps to the grid: a bin is **L × P units**, with
   `L = ceil(width / pitch)`, `P = ceil(depth / pitch)`.
 - **Height** is in **7 mm** increments (+ the ~5 mm base height).
-- **Pitch**: **42 mm** (standard) and **36 mm** supported. ⚠️ Different pitches are
-  **not cross-compatible** — a 36 mm bin does not fit a 42 mm baseplate. The UI must say so.
+- **Pitch**: continuous parameter, validated to **20–84 mm** (42 standard, 36 common).
+  ⚠️ Different pitches are **not cross-compatible** — a bin fits a baseplate of the *same*
+  pitch only. The UI must say so.
 - **Base variants**: magnet / screw / plain. At smaller pitch the magnet (6.5 mm) fits
   worse → the available base variants depend on the pitch (UI greys out impossible ones).
 
@@ -76,9 +77,12 @@ STEP assets, everything stays JS for the all-browser target.
 Browser (replicad):  build foot(pitch) → tile L×P → walls(N×7) → +lip → −pocket → export
 ```
 
-The bin is built parametrically from `cols/rows/heightUnits/pitch`; the foot profile is
-modelled (rounded body + chamfer today; exact Gridfinity profile + magnet/screw holes are
-a later refinement). See `src/cad/bin.ts` and spec 003.
+The bin is built parametrically from `cols/rows/heightUnits/pitch/includeLip`. The **real
+Gridfinity foot (socket) + stacking lip** are adapted from replicad's MIT Gridfinity
+example, parametrised by pitch (20–84 mm), **without magnets/screws** (by design). The
+socket/lip profiles are pitch-independent; only the footprint scales. See `src/cad/bin.ts`
+and spec 004. (Open: exact-spec fit on real baseplates — replicad's socket is 5.0 mm vs
+standard 4.75 — needs a physical fit test.)
 
 What scales with pitch and what doesn't:
 
