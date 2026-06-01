@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Python bake tooling
+.venv/
+__pycache__/
+*.pyc
+
+# Test / coverage
+coverage/
+
+# Env
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+*.log
