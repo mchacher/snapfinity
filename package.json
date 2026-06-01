@@ -1,0 +1,28 @@
+{
+  "name": "snapfinity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Turn a photo of an object into a custom Gridfinity bin, entirely in the browser.",
+  "license": "GPL-3.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
