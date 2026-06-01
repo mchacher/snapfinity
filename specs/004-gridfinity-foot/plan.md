@@ -17,7 +17,7 @@
 - [x] `tools/cad/sample.ts` + `npm run sample` + tsx dep
 - [x] docs updated
 - [x] four checks green locally
-- [ ] PR + CI green
+- [x] PR + CI green (#4, merged)
 
 ## Test plan
 

@@ -35,7 +35,7 @@ request — just the feet). The lip is **parametric, default on**.
 - [x] Pitch validation (20–84) with throw
 - [x] Tests: bbox for pitch 42/36/30, range validation, lip on/off changes STL, non-empty STL
 - [x] `tools/cad/sample.ts` (tsx) generates samples from the real model — no duplication
-- [x] `npm run typecheck | lint | test | build` green; CI green on the PR
+- [x] `npm run typecheck | lint | test | build` green; CI green on PR #4 (merged)
 - [ ] Physical fit on a real baseplate — deferred (see morning questions)
 
 ## Edge cases

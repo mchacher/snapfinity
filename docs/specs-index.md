@@ -8,7 +8,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 001 | [scaffold-test-harness](../specs/001-scaffold-test-harness/) | ✅ Done | Vite + TS + Vitest + ESLint + CI; `core/` pure-logic convention. Iteration 0. |
 | 002 | [calibration-sizing-math](../specs/002-calibration-sizing-math/) | ✅ Done | Pure calibration (px→mm) + Gridfinity sizing (cols×rows, height units), pitch 42/36. Iteration 1. |
 | 003 | [cad-replicad-spike](../specs/003-cad-replicad-spike/) | ✅ Done | Parametric Gridfinity bin in replicad (headless tests, STL export); foot modelled in replicad (Python bake dropped). Iteration 2. |
-| 004 | [gridfinity-foot](../specs/004-gridfinity-foot/) | In review | Real Gridfinity foot + stacking lip (adapted from replicad's MIT example), parametric pitch 20–84 mm, no magnets. |
+| 004 | [gridfinity-foot](../specs/004-gridfinity-foot/) | ✅ Done | Real Gridfinity foot + stacking lip (adapted from replicad's MIT example), parametric pitch 20–84 mm, no magnets. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
