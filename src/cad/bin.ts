@@ -48,6 +48,9 @@ export interface BinParams {
   pitchMm?: number;
   /** Include the stacking lip (default true). */
   includeLip?: boolean;
+  /** Shell the body into a rectangular cavity (default true). Pass false for a solid body
+   *  to cut a tool-shaped pocket into (see cad/pocket.ts). */
+  hollow?: boolean;
 }
 
 export interface BinDimensions {
@@ -158,22 +161,31 @@ function buildTopShape(
 
 /** Build the Gridfinity bin solid (tiled feet + body + stacking lip). */
 export function makeBin(params: BinParams): Shape3D {
-  const { cols, rows, heightUnits, pitchMm = DEFAULT_PITCH_MM, includeLip = true } = params;
+  const {
+    cols,
+    rows,
+    heightUnits,
+    pitchMm = DEFAULT_PITCH_MM,
+    includeLip = true,
+    hollow = true,
+  } = params;
   assertPitch(pitchMm);
 
   const stdHeight = heightUnits * HEIGHT_UNIT_MM;
   let box = drawRoundedRectangle(cols * pitchMm - CLEARANCE, rows * pitchMm - CLEARANCE, CORNER_RADIUS)
     .sketchOnPlane()
     .extrude(stdHeight) as Shape3D;
-  box = box.shell(WALL, (f) => f.inPlane('XY', stdHeight));
+  if (hollow) {
+    box = box.shell(WALL, (f) => f.inPlane('XY', stdHeight));
+  }
 
   const top = buildTopShape(pitchMm, cols, rows, includeLip).translateZ(stdHeight);
 
   let base: Shape3D | null = null;
   for (const socket of cloneOnGrid(buildSocket(pitchMm), pitchMm, cols, rows)) {
-    base = base ? base.fuse(socket, { optimisation: 'commonFace' }) : socket;
+    base = base ? base.fuse(socket) : socket;
   }
   if (!base) throw new Error('bin must have at least one cell');
 
-  return base.fuse(box, { optimisation: 'commonFace' }).fuse(top, { optimisation: 'commonFace' });
+  return base.fuse(box).fuse(top);
 }
