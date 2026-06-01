@@ -38,7 +38,7 @@ the foundation that makes "tests from day one" real.
 - [x] `src/core/` exists with a pure sample module + a passing Vitest test
 - [x] `npm run typecheck | lint | test | build` all green locally
 - [x] `.github/workflows/ci.yml` runs the four checks
-- [ ] GitHub repo created, branch pushed, PR opened, **CI green on the PR**
+- [x] GitHub repo created, branch pushed, PR opened, **CI green on the PR** (#1, merged)
 - [x] CLAUDE.md "Build & run" filled; the core/adapters/ui convention documented
 
 ## Scope

@@ -24,7 +24,7 @@
 - [x] scripts: dev/build/test/lint/typecheck
 - [x] ci.yml
 - [x] all four checks green locally
-- [ ] GitHub repo + branch + PR + **CI green**
+- [x] GitHub repo + branch + PR + **CI green** (#1, merged)
 - [x] CLAUDE.md "Build & run" + README updated
 
 ## Test plan
