@@ -10,6 +10,7 @@ context lives in `docs/` and `specs/`.
 | ---------------------------------------------------- | --------------------------------------------------------------------- |
 | What Snapfinity is and how it's architected          | [docs/technical/architecture.md](docs/technical/architecture.md)      |
 | The vision algorithm reference (the "oracle")        | [docs/technical/algorithm-bench.md](docs/technical/algorithm-bench.md) |
+| The photo bank for robust segmentation               | [docs/technical/dataset.md](docs/technical/dataset.md)                |
 | All features ever shipped, by spec                   | [docs/specs-index.md](docs/specs-index.md)                            |
 | Specific feature history / design                    | `specs/NNN-name/{spec,architecture,plan}.md`                          |
 
