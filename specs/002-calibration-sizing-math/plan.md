@@ -16,7 +16,7 @@
 - [x] `calibration.test.ts` covering every scenario below
 - [x] remove sanity placeholder
 - [x] four checks green locally
-- [ ] PR + CI green
+- [x] PR + CI green (#2, merged)
 
 ## Test plan
 

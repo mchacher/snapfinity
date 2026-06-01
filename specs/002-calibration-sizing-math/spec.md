@@ -37,7 +37,7 @@ rich unit tests and sets the standard for every later module in `core/`.
 - [x] `src/core/sizing.ts` — `unitsForLength`, `gridFootprint`, `heightUnits` + constants, fully unit-tested
 - [x] Placeholder `core/sanity.ts` removed (superseded by real modules)
 - [x] Boundary tests pass (e.g. 42.0 → 1 unit, 42.01 → 2 units; pitch 36; zero → 1; negative → throws)
-- [x] `npm run typecheck | lint | test | build` green locally (17 tests); CI green on the PR pending
+- [x] `npm run typecheck | lint | test | build` green locally (17 tests); CI green on PR #2 (merged)
 
 ## Scope
 
