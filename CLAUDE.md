@@ -41,8 +41,8 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 - **Frontend**: Vite + light JS (framework TBD in first UI spec)
 - **Vision**: opencv.js (OpenCASCADE-free WASM port of OpenCV)
 - **Polygon offset**: clipper (js port of the Clipper lib used by `pyclipper`)
-- **CAD**: replicad (OpenCascade WASM) — parametric Gridfinity bin (foot/lip modelled in
-  replicad, **pitch 42 mm and 36 mm**) + boolean pocket. No Python, no STEP assets.
+- **CAD**: replicad (OpenCascade WASM) — parametric Gridfinity bin (real foot + lip adapted
+  from replicad's example, **pitch 20–84 mm**, no magnets) + boolean pocket. No Python, no STEP assets.
 - **3D preview**: three.js
 - **Hosting**: static site (GitHub Pages / Cloudflare Pages)
 
@@ -52,7 +52,7 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 | ------------- | ------------------------------------------------------------------------------------------------- |
 | **Token**     | Calibration reference of known diameter. `token 2.0 v4`: OD **76.2 mm**, 2 mm thick, 6-fold star.  |
 | **Footprint** | The tool's 2D outline extracted from the photo, plus a clearance **offset**.                       |
-| **Pitch**     | Gridfinity grid spacing. Supported: **42 mm** (standard) and **36 mm**. Pitches are NOT cross-compatible. |
+| **Pitch**     | Gridfinity grid spacing, parametric **20–84 mm** (42 standard). Pitches are NOT cross-compatible. |
 | **Foot**      | The pitch×pitch Gridfinity base unit — modelled parametrically in replicad, tiled L×P.              |
 | **Bin**       | The generated box: tiled feet + walls (N×7 mm) + stacking lip − tool pocket.                        |
 
