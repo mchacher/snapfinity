@@ -5,6 +5,9 @@ node_modules/
 dist/
 .vite/
 
+# Generated CAD artifacts (preview tool)
+out/
+
 # Python bake tooling
 .venv/
 __pycache__/

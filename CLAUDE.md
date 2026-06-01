@@ -30,7 +30,7 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 📱 photo (tool + token)
   → opencv.js     detect token → calibrate mm/px → extract tool contour
     → clipper      offset the contour (printing clearance)
-      → replicad   tile the pre-baked Gridfinity foot (L×P) → walls (N×7mm)
+      → replicad   build the parametric Gridfinity foot, tile L×P → walls (N×7mm)
                    → + stacking lip → − tool pocket
         → three.js live 3D preview
           → export STL / STEP / 3MF
@@ -41,10 +41,9 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 - **Frontend**: Vite + light JS (framework TBD in first UI spec)
 - **Vision**: opencv.js (OpenCASCADE-free WASM port of OpenCV)
 - **Polygon offset**: clipper (js port of the Clipper lib used by `pyclipper`)
-- **CAD**: replicad (OpenCascade WASM) — parametric bin assembly + boolean pocket
+- **CAD**: replicad (OpenCascade WASM) — parametric Gridfinity bin (foot/lip modelled in
+  replicad, **pitch 42 mm and 36 mm**) + boolean pocket. No Python, no STEP assets.
 - **3D preview**: three.js
-- **Pre-baked assets**: Gridfinity foot + stacking-lip primitives, **pitch 42 mm and
-  36 mm**, generated offline in Python (`cqgridfinity`) and shipped as STEP/mesh
 - **Hosting**: static site (GitHub Pages / Cloudflare Pages)
 
 ## Key domain concepts
@@ -54,7 +53,7 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 | **Token**     | Calibration reference of known diameter. `token 2.0 v4`: OD **76.2 mm**, 2 mm thick, 6-fold star.  |
 | **Footprint** | The tool's 2D outline extracted from the photo, plus a clearance **offset**.                       |
 | **Pitch**     | Gridfinity grid spacing. Supported: **42 mm** (standard) and **36 mm**. Pitches are NOT cross-compatible. |
-| **Foot**      | The pitch×pitch Gridfinity base unit — a pre-baked primitive, tiled L×P.                            |
+| **Foot**      | The pitch×pitch Gridfinity base unit — modelled parametrically in replicad, tiled L×P.              |
 | **Bin**       | The generated box: tiled feet + walls (N×7 mm) + stacking lip − tool pocket.                        |
 
 ## Conventions
