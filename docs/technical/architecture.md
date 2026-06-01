@@ -134,5 +134,5 @@ Snapfinity/
 
 - Arbitrary pitch (beyond 42/36) → parametric foot generated in replicad (vs more baked assets).
 - UI framework (vanilla vs React/Svelte) — decided in the first UI spec.
-- License — TBD (community-friendly; AGPL like Sowel, or MIT/GPL).
+- License — **GPL-3.0** (copyleft, consistent with Sowel's AGPL line). See `LICENSE`.
 - WASM payload (opencv.js + replicad ≈ 20 MB) and mobile perf → lazy-load, cache, minimal runtime compute (base pre-baked).

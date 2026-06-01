@@ -4,7 +4,7 @@ Snap a photo of a tool → get a custom **Gridfinity** bin with a pocket shaped 
 like it, ready to 3D-print. Runs **100 % in your browser** — your photo never leaves
 your device.
 
-**By Marc Chachereau** · License: TBD
+**By Marc Chachereau** · [GPL-3.0](LICENSE)
 
 > 🚧 **Foundation stage.** Architecture and working method are set; the app is not built
 > yet. See [docs/technical/architecture.md](docs/technical/architecture.md).
