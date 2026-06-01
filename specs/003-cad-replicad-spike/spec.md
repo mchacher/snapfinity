@@ -36,7 +36,7 @@ exact Gridfinity profile compliance is a later refinement.
 - [x] Geometry tests: 1×1, 2×1, 3×2 outer bbox + STL non-empty (6 tests)
 - [x] `tools/cad/preview.mjs` generates a sample STL (`out/snapfinity-2x1.stl`)
 - [x] Architecture updated (model-in-replicad; Python bake dropped)
-- [x] `npm run typecheck | lint | test | build` green; CI green on the PR
+- [x] `npm run typecheck | lint | test | build` green; CI green on PR #3 (merged)
 
 ## Scope
 

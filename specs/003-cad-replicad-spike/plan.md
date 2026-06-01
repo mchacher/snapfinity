@@ -19,7 +19,7 @@
 - [x] sample generator + sample STL produced
 - [x] docs updated (root architecture, CLAUDE)
 - [x] four checks green locally
-- [ ] PR + CI green
+- [x] PR + CI green (#3, merged)
 
 ## Test plan
 
