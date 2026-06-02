@@ -15,3 +15,23 @@ export function shapeToStl(shape: Shape3D, options: StlOptions = {}): Blob {
   const { toleranceMm = DEFAULT_STL_TOLERANCE_MM, binary = true } = options;
   return shape.blobSTL({ tolerance: toleranceMm, binary });
 }
+
+/** Export a shape to a STEP Blob (parametric, exact). */
+export function shapeToStep(shape: Shape3D): Blob {
+  return shape.blobSTEP();
+}
+
+/** Download filename for a bin, e.g. `snapfinity-2x1.stl`. */
+export function binFilename(cols: number, rows: number, ext: string): string {
+  return `snapfinity-${cols}x${rows}.${ext}`;
+}
+
+/** Trigger a browser download of a Blob (browser only). */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}

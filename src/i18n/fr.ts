@@ -33,5 +33,10 @@ export const fr: Dict = {
     threemf: '3MF',
     hint: 'Aperçu live & export à la prochaine étape.',
   },
-  viewer: { placeholder: 'Aperçu 3D', hint: 'Ton bac apparaîtra ici' },
+  viewer: {
+    placeholder: 'Aperçu 3D',
+    hint: 'Ton bac apparaîtra ici',
+    loading: 'Génération…',
+    error: 'Échec du rendu',
+  },
 };

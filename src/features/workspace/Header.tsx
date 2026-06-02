@@ -2,7 +2,12 @@ import { Boxes, Download } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useI18n, type Lang } from '../../i18n';
 
-export function Header() {
+interface Props {
+  onExport: (format: 'stl' | 'step') => void;
+  canExport: boolean;
+}
+
+export function Header({ onExport, canExport }: Props) {
   const { lang, setLang, t } = useI18n();
   const langs: Lang[] = ['fr', 'en'];
 
@@ -29,8 +34,11 @@ export function Header() {
             </button>
           ))}
         </div>
-        <Button variant="primary" icon={<Download size={15} />} disabled>
-          {t('export.title')}
+        <Button variant="secondary" disabled={!canExport} onClick={() => onExport('step')}>
+          {t('export.step')}
+        </Button>
+        <Button variant="primary" icon={<Download size={15} />} disabled={!canExport} onClick={() => onExport('stl')}>
+          {t('export.stl')}
         </Button>
       </div>
     </header>
