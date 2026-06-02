@@ -16,9 +16,23 @@ export interface MeshArrays {
 
 export type ExportFormat = 'stl' | 'step';
 
+/** Two-finger grip-notch config (cut into the front-wall rim by the worker). */
+export interface NotchConfig {
+  enabled: boolean;
+  /** Finger-scoop radius in mm. */
+  radiusMm: number;
+}
+
 /** main → worker. Each request carries an `id`; the reply echoes it. */
 export type WorkerRequest =
-  | { type: 'build'; id: number; binParams: BinParams; footprint: Point2D[] | null; depthMm: number }
+  | {
+      type: 'build';
+      id: number;
+      binParams: BinParams;
+      footprint: Point2D[] | null;
+      depthMm: number;
+      notch: NotchConfig;
+    }
   | { type: 'export'; id: number; format: ExportFormat };
 
 /** worker → main. `built` transfers the array buffers; `exported` clones the Blob. */

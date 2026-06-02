@@ -49,6 +49,10 @@ export interface Params {
   tokenOdMm: number;
   /** Preview render opacity, 0.2…1 (1 = opaque). Lower it to see the pocket through the walls. */
   renderOpacity: number;
+  /** Cut two finger scoops into the front-wall rim (grab the tool with two fingers). */
+  gripNotches: boolean;
+  /** Finger-scoop radius in mm. */
+  notchRadiusMm: number;
 }
 
 const initialParams: Params = {
@@ -71,6 +75,8 @@ const initialParams: Params = {
   includeLip: true,
   tokenOdMm: 76.2,
   renderOpacity: 1,
+  gripNotches: false,
+  notchRadiusMm: 9,
 };
 
 export function Workspace() {

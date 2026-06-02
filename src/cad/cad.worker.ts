@@ -2,6 +2,7 @@ import type { Shape3D } from 'replicad';
 import { initOcForBrowser } from './oc-browser';
 import { makeBin } from './bin';
 import { makeBinWithPocket } from './pocket';
+import { cutGripNotches } from './notches';
 import { meshToArrays } from './mesh-arrays';
 import { shapeToStl, shapeToStep } from './export';
 import type { WorkerRequest, WorkerResponse } from './cad-messages';
@@ -25,10 +26,11 @@ ctx.onmessage = (event) => {
       await initOcForBrowser();
       if (msg.type === 'build') {
         const fp = msg.footprint;
-        currentShape =
+        const shape =
           fp && fp.length >= 3
             ? makeBinWithPocket(msg.binParams, fp, { depthMm: msg.depthMm })
             : makeBin(msg.binParams);
+        currentShape = cutGripNotches(shape, msg.binParams, msg.notch);
         const { positions, normals, index } = meshToArrays(currentShape);
         ctx.postMessage({ type: 'built', id: msg.id, positions, normals, index }, [
           positions.buffer,
