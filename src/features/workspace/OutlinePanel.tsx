@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
+import { BusyOverlay } from '../../ui/BusyOverlay';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
 import { EDIT_ADD, EDIT_ERASE } from '../../vision/mask-edit';
@@ -68,12 +69,6 @@ export function OutlinePanel({
               {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
             </Chip>
           )}
-          {photo.status === 'analyzing' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm backdrop-blur">
-              <Loader2 size={12} className="animate-spin" />
-              {t('photo.analyzing')}
-            </span>
-          )}
           <span className="flex-1" />
           <button
             type="button"
@@ -98,6 +93,7 @@ export function OutlinePanel({
             brushErase={params.brushMode === 'erase'}
           />
         </div>
+        {photo.status === 'analyzing' && <BusyOverlay label={t('photo.analyzing')} />}
         {hidden}
       </div>
     );
