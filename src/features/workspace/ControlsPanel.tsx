@@ -34,10 +34,13 @@ export function ControlsPanel({ params, set, tab }: Props) {
           />
         </Section>
         <Section title={t('params.image')}>
-          <Toggle
+          <Slider
             label={t('params.flatten')}
-            checked={params.flattenBackground}
-            onChange={(v) => set('flattenBackground', v)}
+            value={params.flattenStrength}
+            onChange={(v) => set('flattenStrength', v)}
+            min={0}
+            max={1}
+            step={0.05}
           />
           <Slider
             label={t('params.brightness')}

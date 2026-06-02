@@ -33,8 +33,8 @@ export interface DerivedMask {
 
 export interface AnalyzeOptions {
   tokenOdMm?: number;
-  /** Pre-inference background flattening (divide-by-blur) — removes soft shadows on light bg. */
-  flatten?: boolean;
+  /** Pre-inference background-flatten strength (0…1, divide-by-blur) — removes soft shadows. */
+  flatten?: number;
   /** Pre-inference brightness offset (washes light shadows toward white). */
   brightness?: number;
   /** Pre-inference contrast (classic factor formula). */
@@ -77,7 +77,7 @@ interface DecodeCache {
 let decodeCache: DecodeCache | null = null;
 
 export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Promise<PhotoAnalysis> {
-  const { tokenOdMm = TOKEN_OD_MM, flatten = false, brightness = 0, contrast = 0 } = options;
+  const { tokenOdMm = TOKEN_OD_MM, flatten = 0, brightness = 0, contrast = 0 } = options;
 
   if (decodeCache?.file !== file) {
     const ref = await getRefContour();
@@ -94,7 +94,7 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
   // shadows, then the optional brightness/contrast. The displayed photo is left untouched
   // (flatten would only wash it out); brightness/contrast are mirrored in the overlay.
   let segInput: Uint8ClampedArray = c.seg320;
-  if (flatten) segInput = flattenRgba(segInput, SEG_SIZE);
+  if (flatten > 0) segInput = flattenRgba(segInput, SEG_SIZE, flatten);
   if (brightness !== 0 || contrast !== 0) segInput = adjustRgba(segInput, brightness, contrast);
   const saliency = await runSaliency(segInput);
 

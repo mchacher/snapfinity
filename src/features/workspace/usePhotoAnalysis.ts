@@ -20,7 +20,7 @@ export function usePhotoAnalysis({
   brightness,
   contrast,
 }: {
-  flatten: boolean;
+  flatten: number;
   brightness: number;
   contrast: number;
 }): PhotoAnalysisState {
