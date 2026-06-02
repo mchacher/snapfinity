@@ -20,7 +20,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 013 | [contour](../specs/013-contour/) | ✅ Done | Outer contour + live **smoothing**/**clearance**, contextual left panel, header-tab layout, green-mask opacity, **detection threshold**, **brightness/contrast** + **flatten background** (anti-shadow). Iteration 8 (part 2). |
 | 014 | [mask-brush](../specs/014-mask-brush/) | ✅ Done | Manual **add/erase brush** on the mask to fine-tune; edits composited over the auto mask (persist across auto-params), contour re-derives live. Iteration 8 (part 3). |
 | 015 | [pocket-e2e](../specs/015-pocket-e2e/) | ✅ Done | Feed the offset contour (→ mm, centred) into the bin **pocket** — real object-shaped cavity in the 3D preview + STL/STEP. CAD rebuild gated to the Preview tab. Iteration 9. |
-| 016 | [webgpu-pocket-perf](../specs/016-webgpu-pocket-perf/) | In review | Perf step 1/3: u2netp on **WebGPU** (auto WASM fallback) + **decimate the pocket polygon** (Douglas–Peucker 0.2 mm) before the replicad cut. No behavioural change. Iteration 10. |
+| 016 | [webgpu-pocket-perf](../specs/016-webgpu-pocket-perf/) | ✅ Done | Perf step 1/3: u2netp on **WebGPU** (auto WASM fallback) + **decimate the pocket polygon** (Douglas–Peucker 0.2 mm) before the replicad cut. No behavioural change. Iteration 10. |
+| 017 | [cad-worker](../specs/017-cad-worker/) | In review | Perf step 2/3: move the replicad **build + mesh + export to a web worker**. The shape stays in the worker (WASM handle); main thread gets transferable mesh arrays + export blobs. Preview stays interactive during rebuild; export no longer freezes. Iteration 10. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
