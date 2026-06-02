@@ -22,7 +22,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 015 | [pocket-e2e](../specs/015-pocket-e2e/) | ✅ Done | Feed the offset contour (→ mm, centred) into the bin **pocket** — real object-shaped cavity in the 3D preview + STL/STEP. CAD rebuild gated to the Preview tab. Iteration 9. |
 | 016 | [webgpu-pocket-perf](../specs/016-webgpu-pocket-perf/) | ✅ Done | Perf step 1/3: u2netp on **WebGPU** (auto WASM fallback) + **decimate the pocket polygon** (Douglas–Peucker 0.2 mm) before the replicad cut. No behavioural change. Iteration 10. |
 | 017 | [cad-worker](../specs/017-cad-worker/) | ✅ Done | Perf step 2/3: move the replicad **build + mesh + export to a web worker**. The shape stays in the worker (WASM handle); main thread gets transferable mesh arrays + export blobs. Preview stays interactive during rebuild; export no longer freezes. Iteration 10. |
-| 018 | [3d-transparency](../specs/018-3d-transparency/) | In review | Preview **opacity slider** (Render section, 0.2–1, default 1) — translucent bin (`depthWrite` off) to see the pocket through the walls. Preview-only, no geometry/export change. Iteration 11. |
+| 018 | [3d-transparency](../specs/018-3d-transparency/) | ✅ Done | Preview **opacity slider** (Render section, 0.2–1, default 1) — translucent bin (`depthWrite` off) to see the pocket through the walls. Preview-only, no geometry/export change. Iteration 11. |
+| 019 | [pdf-plan](../specs/019-pdf-plan/) | In review | **Printable 1:1 top-view PDF** (pdf-lib): object outline (solid) + pocket (dashed) at true scale, 50 mm control ruler, print-at-100% header, A4 multi-page tiling. Header "Plan PDF" button, gated on a calibrated contour. Iteration 12. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

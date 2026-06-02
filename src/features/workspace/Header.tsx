@@ -6,11 +6,14 @@ import { useI18n, type Lang } from '../../i18n';
 interface Props {
   onExport: (format: 'stl' | 'step') => void;
   canExport: boolean;
+  /** Export the printable 1:1 top-view PDF plan (needs a calibrated contour). */
+  onExportPdf: () => void;
+  canExportPdf: boolean;
   tab: 'outline' | 'preview';
   onTabChange: (tab: 'outline' | 'preview') => void;
 }
 
-export function Header({ onExport, canExport, tab, onTabChange }: Props) {
+export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, onTabChange }: Props) {
   const { lang, setLang, t } = useI18n();
   const langs: Lang[] = ['fr', 'en'];
 
@@ -49,6 +52,9 @@ export function Header({ onExport, canExport, tab, onTabChange }: Props) {
             </button>
           ))}
         </div>
+        <Button variant="secondary" disabled={!canExportPdf} onClick={onExportPdf}>
+          {t('export.pdf')}
+        </Button>
         <Button variant="secondary" disabled={!canExport} onClick={() => onExport('step')}>
           {t('export.step')}
         </Button>
