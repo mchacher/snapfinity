@@ -4,7 +4,7 @@ import { ControlsPanel } from './ControlsPanel';
 import { OutlinePanel } from './OutlinePanel';
 import { Viewer } from './Viewer';
 import { useBin } from './useBin';
-import { usePhotoAnalysis } from './usePhotoAnalysis';
+import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
 import { footprintFromBBox } from '../../core/sizing';
 
@@ -20,6 +20,8 @@ export interface Params {
   offsetMm: number;
   /** Contour smoothing knob, 0 (faithful) … 1 (smooth). */
   smoothingFactor: number;
+  /** u2netp saliency cut, higher = stricter (drops shadows). */
+  detectThreshold: number;
   /** Show the green segmentation tint over the photo. */
   showMask: boolean;
   /** Green tint strength when shown, 0 … 1. */
@@ -38,6 +40,7 @@ const initialParams: Params = {
   thicknessMm: 18,
   offsetMm: 1,
   smoothingFactor: 0.3,
+  detectThreshold: 0.5,
   showMask: true,
   maskOpacity: 0.45,
   includeLip: true,
@@ -52,6 +55,7 @@ export function Workspace() {
 
   const { geometry, shape, status } = useBin(params);
   const photo = usePhotoAnalysis();
+  const derived = useDerivedMask(photo.result, params.detectThreshold);
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so
   // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
@@ -61,13 +65,13 @@ export function Workspace() {
   // Auto-size: derive cols/rows from the object bbox × scale, unless the user took over.
   useEffect(() => {
     if (params.manualSize) return;
-    const bbox = photo.result?.objectBBoxPx;
+    const bbox = derived?.objectBBoxPx;
     if (!bbox) return;
     const fp = footprintFromBBox(bbox, scaleMmPerPx, params.pitchMm);
     if (fp && (fp.cols !== params.cols || fp.rows !== params.rows)) {
       setParams((p) => ({ ...p, cols: fp.cols, rows: fp.rows }));
     }
-  }, [photo.result, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
+  }, [derived, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
 
   const exportFile = (format: 'stl' | 'step') => {
     if (!shape) return;
@@ -92,6 +96,7 @@ export function Workspace() {
             <OutlinePanel
               params={params}
               photo={photo}
+              derived={derived}
               scaleMmPerPx={scaleMmPerPx}
               onUpload={(file) => photo.analyze(file, params.tokenOdMm)}
             />

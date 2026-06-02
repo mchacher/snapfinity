@@ -17,6 +17,12 @@ export interface PhotoAnalysis {
   /** Calibration scale, or `null` when no token was found. */
   scaleMmPerPx: number | null;
   token: { found: boolean } & Partial<TokenCircle> & { score?: number };
+  /** Raw u2netp saliency map (SEG_SIZE²) — the mask is re-derived from it at any threshold. */
+  saliency: Float32Array;
+}
+
+/** Mask-dependent results, re-derived from the saliency at the chosen detection threshold. */
+export interface DerivedMask {
   /** Full-resolution binary mask of the isolated tool (0 / 255). */
   mask: { data: Uint8Array; width: number; height: number };
   objectBBoxPx: BBox | null;
@@ -56,24 +62,9 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
 
   const det = detectToken(grayMat, ref, { tokenOdMm });
   grayMat.delete();
-  const tokenCircle: TokenCircle | null = det.found
-    ? { centerPx: det.centerPx, radiusPx: det.radiusPx }
-    : null;
   const scaleMmPerPx = det.found ? det.scaleMmPerPx : null;
 
   const saliency = await runSaliency(seg320);
-  const mask320 = saliencyToMask(saliency);
-
-  const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
-  const maskFull = new cv.Mat();
-  cv.resize(maskSmall, maskFull, new cv.Size(width, height), 0, 0, cv.INTER_NEAREST);
-  cleanMask(maskFull, tokenCircle);
-  const maskData = new Uint8Array(maskFull.data);
-  const outline = outerContour(maskFull); // may mutate maskFull — we're done reading it
-  maskSmall.delete();
-  maskFull.delete();
-
-  const objectBBoxPx = maskBBox(maskData, width, height);
 
   return {
     imageData,
@@ -83,8 +74,36 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
     token: det.found
       ? { found: true, centerPx: det.centerPx, radiusPx: det.radiusPx, score: det.score }
       : { found: false },
-    mask: { data: maskData, width, height },
-    objectBBoxPx,
+    saliency,
+  };
+}
+
+/**
+ * Derive the isolated-tool mask + contour from the saliency at a given detection threshold.
+ * Raising the threshold keeps only high-confidence foreground, which drops soft shadows.
+ * Re-runs only the cheap post-processing (re-threshold + cv upscale/clean/contour) — never
+ * the u2netp inference — so it's fast enough to drive a live slider. Requires opencv.js ready
+ * (always true once `analyzePhoto` has run).
+ */
+export function deriveMask(a: PhotoAnalysis, threshold: number): DerivedMask {
+  const tokenCircle: TokenCircle | null =
+    a.token.found && a.token.centerPx && a.token.radiusPx
+      ? { centerPx: a.token.centerPx, radiusPx: a.token.radiusPx }
+      : null;
+
+  const mask320 = saliencyToMask(a.saliency, threshold);
+  const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
+  const maskFull = new cv.Mat();
+  cv.resize(maskSmall, maskFull, new cv.Size(a.width, a.height), 0, 0, cv.INTER_NEAREST);
+  cleanMask(maskFull, tokenCircle);
+  const maskData = new Uint8Array(maskFull.data);
+  const outline = outerContour(maskFull); // may mutate maskFull — we're done reading it
+  maskSmall.delete();
+  maskFull.delete();
+
+  return {
+    mask: { data: maskData, width: a.width, height: a.height },
+    objectBBoxPx: maskBBox(maskData, a.width, a.height),
     outline,
   };
 }

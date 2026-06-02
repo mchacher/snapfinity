@@ -29,6 +29,7 @@ export const en = {
     height: 'Height',
     thickness: 'Tool thickness',
     offset: 'Clearance',
+    threshold: 'Threshold',
     smoothing: 'Smoothing',
     display: 'Display',
     maskShow: 'Green mask',

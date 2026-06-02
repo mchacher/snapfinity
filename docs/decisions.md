@@ -2,6 +2,12 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Detection threshold (shadow control)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 16 | **Shadows in the mask** | Shadows get included because u2netp's saliency is binarised at a fixed cut. Fix: expose a **detection-threshold slider** (`detectThreshold`, 0.3–0.8, default 0.5) — raising it keeps only high-confidence foreground, dropping soft shadows. The mask + contour are **re-derived live from the stored saliency** (`deriveMask` — re-threshold + cv upscale/clean/contour, **no u2netp re-inference**), debounced. Trade-off: too high also drops low-contrast real parts, so it's a user knob. The mask brush (014) handles the residual cases. |
+
 ## 2026-06-02 — Global layout (mockup A)
 
 | # | Topic | Decision |

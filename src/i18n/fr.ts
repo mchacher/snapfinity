@@ -31,6 +31,7 @@ export const fr: Dict = {
     height: 'Hauteur',
     thickness: 'Épaisseur outil',
     offset: 'Jeu',
+    threshold: 'Seuil',
     smoothing: 'Lissage',
     display: 'Affichage',
     maskShow: 'Masque vert',

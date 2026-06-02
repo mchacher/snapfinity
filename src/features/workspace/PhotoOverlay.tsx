@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { PhotoAnalysis } from '../../vision/analyze';
+import type { BBox } from '../../vision/mask';
 import type { Point2D } from '../../core/offset';
 
 /** Cap the rendered canvas so a 12 MP phone photo doesn't allocate a huge surface. */
@@ -33,11 +34,17 @@ function drawRing(
  */
 export function PhotoOverlay({
   analysis,
+  mask = null,
+  bbox = null,
   contour = [],
   offsetContour = [],
   maskOpacity = 0.45,
 }: {
   analysis: PhotoAnalysis;
+  /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
+  mask?: { data: Uint8Array; width: number; height: number } | null;
+  /** Object bounding box (full-res px). */
+  bbox?: BBox | null;
   /** Smoothed outline (full-res px) — drawn solid. */
   contour?: Point2D[];
   /** Clearance-offset outline (full-res px) — drawn dashed (the pocket). */
@@ -50,7 +57,7 @@ export function PhotoOverlay({
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const { imageData, width, height, mask, token, objectBBoxPx } = analysis;
+    const { imageData, width, height, token } = analysis;
 
     const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
     const cw = Math.max(1, Math.round(width * scale));
@@ -68,7 +75,7 @@ export function PhotoOverlay({
     ctx.drawImage(tmp, 0, 0, cw, ch);
 
     // green mask tint (nearest-sample the full-res mask) — blend toward green by maskOpacity
-    if (maskOpacity > 0) {
+    if (mask && maskOpacity > 0) {
       const a = Math.min(1, maskOpacity);
       const frame = ctx.getImageData(0, 0, cw, ch);
       const d = frame.data;
@@ -97,18 +104,18 @@ export function PhotoOverlay({
     }
 
     // object bounding box — only until a contour is shown (then it'd be clutter)
-    if (objectBBoxPx && contour.length === 0) {
+    if (bbox && contour.length === 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.85)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 4]);
-      ctx.strokeRect(objectBBoxPx.x * scale, objectBBoxPx.y * scale, objectBBoxPx.w * scale, objectBBoxPx.h * scale);
+      ctx.strokeRect(bbox.x * scale, bbox.y * scale, bbox.w * scale, bbox.h * scale);
       ctx.setLineDash([]);
     }
 
     // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
     drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
-  }, [analysis, contour, offsetContour, maskOpacity]);
+  }, [analysis, mask, bbox, contour, offsetContour, maskOpacity]);
 
   return <canvas ref={ref} className="max-h-full max-w-full rounded-lg" />;
 }

@@ -5,12 +5,14 @@ import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
 import { smoothContour } from '../../core/contour';
 import { offsetPolygon } from '../../core/offset';
+import type { DerivedMask } from '../../vision/analyze';
 import type { Params } from './Workspace';
 import type { PhotoAnalysisState } from './usePhotoAnalysis';
 
 interface Props {
   params: Params;
   photo: PhotoAnalysisState;
+  derived: DerivedMask | null;
   scaleMmPerPx: number | null;
   onUpload: (file: File) => void;
 }
@@ -21,16 +23,15 @@ interface Props {
  * (smoothing, clearance, token Ø) live in the contextual left panel; the mask brush lands here
  * in 014.
  */
-export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
+export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  const result = photo.result;
   // Smoothed outline + clearance offset — pure, recomputed live as the sliders move.
   const contour = useMemo(
-    () => (result ? smoothContour(result.outline, params.smoothingFactor) : []),
-    [result, params.smoothingFactor],
+    () => (derived ? smoothContour(derived.outline, params.smoothingFactor) : []),
+    [derived, params.smoothingFactor],
   );
   const offsetContour = useMemo(() => {
     if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
@@ -76,6 +77,8 @@ export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
         <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
           <PhotoOverlay
             analysis={photo.result}
+            mask={derived?.mask ?? null}
+            bbox={derived?.objectBBoxPx ?? null}
             contour={contour}
             offsetContour={offsetContour}
             maskOpacity={params.showMask ? params.maskOpacity : 0}

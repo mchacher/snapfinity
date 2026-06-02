@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import type { PhotoAnalysis } from '../../vision/analyze';
+import { useCallback, useEffect, useState } from 'react';
+import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
 
@@ -33,4 +33,34 @@ export function usePhotoAnalysis(): PhotoAnalysisState {
   }, []);
 
   return { status, result, analyze };
+}
+
+/**
+ * Re-derive the isolated mask + contour from the analysis at the chosen detection threshold.
+ * Debounced so dragging the threshold slider stays smooth; never re-runs the u2netp inference
+ * (only the cheap re-threshold + cv post-processing). The heavy module is already loaded by
+ * the time there's a result, so the dynamic import resolves instantly.
+ */
+export function useDerivedMask(result: PhotoAnalysis | null, threshold: number): DerivedMask | null {
+  const [derived, setDerived] = useState<DerivedMask | null>(null);
+
+  useEffect(() => {
+    if (!result) {
+      setDerived(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const { deriveMask } = await import('../../vision/analyze');
+        if (!cancelled) setDerived(deriveMask(result, threshold));
+      })();
+    }, 120);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [result, threshold]);
+
+  return derived;
 }

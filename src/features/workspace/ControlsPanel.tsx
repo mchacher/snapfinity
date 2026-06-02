@@ -48,6 +48,14 @@ export function ControlsPanel({ params, set, tab }: Props) {
         </Section>
         <Section title={t('tabs.outline')}>
           <Slider
+            label={t('params.threshold')}
+            value={params.detectThreshold}
+            onChange={(v) => set('detectThreshold', v)}
+            min={0.3}
+            max={0.8}
+            step={0.05}
+          />
+          <Slider
             label={t('params.smoothing')}
             value={params.smoothingFactor}
             onChange={(v) => set('smoothingFactor', v)}
