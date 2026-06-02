@@ -78,32 +78,43 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
   };
 }
 
+/** Cap the cleanup/contour working resolution — full-res cv ops are far too heavy to run live. */
+const WORK_MAX = 1024;
+
 /**
  * Derive the isolated-tool mask + contour from the saliency at a given detection threshold.
  * Raising the threshold keeps only high-confidence foreground, which drops soft shadows.
- * Re-runs only the cheap post-processing (re-threshold + cv upscale/clean/contour) — never
- * the u2netp inference — so it's fast enough to drive a live slider. Requires opencv.js ready
- * (always true once `analyzePhoto` has run).
+ * Re-runs only the cheap post-processing (re-threshold + cv clean/contour) — never the u2netp
+ * inference — and works at a **reduced resolution** (≤ WORK_MAX) so it's fast and light enough
+ * to drive a live slider without churning full-res Mats. The mask is returned at the working
+ * resolution; the outline + bbox are scaled back to full-res px. Requires opencv.js ready.
  */
 export function deriveMask(a: PhotoAnalysis, threshold: number): DerivedMask {
+  const s = Math.min(1, WORK_MAX / Math.max(a.width, a.height));
+  const ww = Math.max(1, Math.round(a.width * s));
+  const wh = Math.max(1, Math.round(a.height * s));
   const tokenCircle: TokenCircle | null =
     a.token.found && a.token.centerPx && a.token.radiusPx
-      ? { centerPx: a.token.centerPx, radiusPx: a.token.radiusPx }
+      ? { centerPx: { x: a.token.centerPx.x * s, y: a.token.centerPx.y * s }, radiusPx: a.token.radiusPx * s }
       : null;
 
   const mask320 = saliencyToMask(a.saliency, threshold);
   const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
-  const maskFull = new cv.Mat();
-  cv.resize(maskSmall, maskFull, new cv.Size(a.width, a.height), 0, 0, cv.INTER_NEAREST);
-  cleanMask(maskFull, tokenCircle);
-  const maskData = new Uint8Array(maskFull.data);
-  const outline = outerContour(maskFull); // may mutate maskFull — we're done reading it
+  const maskWork = new cv.Mat();
+  cv.resize(maskSmall, maskWork, new cv.Size(ww, wh), 0, 0, cv.INTER_NEAREST);
+  cleanMask(maskWork, tokenCircle);
+  const maskData = new Uint8Array(maskWork.data);
+  const outlineWork = outerContour(maskWork); // may mutate maskWork — we're done reading it
   maskSmall.delete();
-  maskFull.delete();
+  maskWork.delete();
 
-  return {
-    mask: { data: maskData, width: a.width, height: a.height },
-    objectBBoxPx: maskBBox(maskData, a.width, a.height),
-    outline,
-  };
+  // scale the outline + bbox back up to full-res px (the mask stays at working resolution)
+  const inv = 1 / s;
+  const outline: Point2D[] = outlineWork.map(([x, y]) => [x * inv, y * inv]);
+  const bbox = maskBBox(maskData, ww, wh);
+  const objectBBoxPx = bbox
+    ? { x: bbox.x * inv, y: bbox.y * inv, w: bbox.w * inv, h: bbox.h * inv }
+    : null;
+
+  return { mask: { data: maskData, width: ww, height: wh }, objectBBoxPx, outline };
 }

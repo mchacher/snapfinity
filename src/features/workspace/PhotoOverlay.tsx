@@ -74,16 +74,19 @@ export function PhotoOverlay({
     tmp.getContext('2d')?.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, 0, 0, cw, ch);
 
-    // green mask tint (nearest-sample the full-res mask) — blend toward green by maskOpacity
+    // green mask tint — nearest-sample the mask by its own dims (it's at working resolution),
+    // blend toward green by maskOpacity
     if (mask && maskOpacity > 0) {
       const a = Math.min(1, maskOpacity);
+      const mw = mask.width;
+      const mh = mask.height;
       const frame = ctx.getImageData(0, 0, cw, ch);
       const d = frame.data;
       for (let y = 0; y < ch; y += 1) {
-        const sy = Math.min(height - 1, Math.floor(y / scale));
+        const my = Math.min(mh - 1, Math.floor((y / ch) * mh));
         for (let x = 0; x < cw; x += 1) {
-          const sx = Math.min(width - 1, Math.floor(x / scale));
-          if (mask.data[sy * width + sx] > 0) {
+          const mx = Math.min(mw - 1, Math.floor((x / cw) * mw));
+          if (mask.data[my * mw + mx] > 0) {
             const i = (y * cw + x) * 4;
             d[i] = Math.round(d[i] * (1 - a) + 64 * a);
             d[i + 1] = Math.round(d[i + 1] * (1 - a) + 200 * a);

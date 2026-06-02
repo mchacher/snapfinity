@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
@@ -43,19 +43,31 @@ export function usePhotoAnalysis(): PhotoAnalysisState {
  */
 export function useDerivedMask(result: PhotoAnalysis | null, threshold: number): DerivedMask | null {
   const [derived, setDerived] = useState<DerivedMask | null>(null);
+  const lastResult = useRef<PhotoAnalysis | null>(null);
 
   useEffect(() => {
     if (!result) {
+      lastResult.current = null;
       setDerived(null);
       return;
     }
+    // A fresh photo derives immediately (no perceptible lag on open); only threshold tweaks
+    // are debounced so dragging the slider coalesces into one re-derive.
+    const immediate = lastResult.current !== result;
+    lastResult.current = result;
     let cancelled = false;
-    const timer = setTimeout(() => {
+    const run = () =>
       void (async () => {
         const { deriveMask } = await import('../../vision/analyze');
         if (!cancelled) setDerived(deriveMask(result, threshold));
       })();
-    }, 120);
+    if (immediate) {
+      run();
+      return () => {
+        cancelled = true;
+      };
+    }
+    const timer = setTimeout(run, 80);
     return () => {
       cancelled = true;
       clearTimeout(timer);
