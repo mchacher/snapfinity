@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { OutlinePanel } from './OutlinePanel';
@@ -8,6 +8,9 @@ import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { useMaskEdit } from './useMaskEdit';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
 import { footprintFromBBox } from '../../core/sizing';
+import { smoothContour } from '../../core/contour';
+import { offsetPolygon } from '../../core/offset';
+import { contourToFootprintMm } from '../../core/footprint';
 
 export interface Params {
   pitchMm: number;
@@ -69,7 +72,6 @@ export function Workspace() {
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
-  const { geometry, shape, status } = useBin(params);
   const photo = usePhotoAnalysis({
     flatten: params.flattenStrength,
     brightness: params.brightness,
@@ -86,6 +88,26 @@ export function Workspace() {
   // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
   const tokenRadiusPx = photo.result?.token.found ? (photo.result.token.radiusPx ?? null) : null;
   const scaleMmPerPx = tokenRadiusPx ? params.tokenOdMm / (2 * tokenRadiusPx) : null;
+
+  // Contour pipeline (pure, live): smoothed outline → clearance offset (px for the overlay),
+  // then the mm footprint that hollows the bin. One source of truth, shared by the overlay
+  // (px) and the CAD pocket (mm).
+  const contour = useMemo(
+    () => (editedMask ? smoothContour(editedMask.outline, params.smoothingFactor) : []),
+    [editedMask, params.smoothingFactor],
+  );
+  const offsetContour = useMemo(() => {
+    if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
+    return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
+  }, [contour, scaleMmPerPx, params.offsetMm]);
+  const footprintMm = useMemo(() => {
+    const ring = offsetContour.length >= 3 ? offsetContour : contour;
+    if (!scaleMmPerPx || ring.length < 3) return null;
+    return contourToFootprintMm(ring, scaleMmPerPx);
+  }, [offsetContour, contour, scaleMmPerPx]);
+
+  // Build the bin only on the Preview tab (replicad is main-thread — don't freeze painting).
+  const { geometry, shape, status } = useBin(params, footprintMm, tab === 'preview');
 
   // Auto-size: derive cols/rows from the (edited) object bbox × scale, unless the user took over.
   useEffect(() => {
@@ -122,6 +144,8 @@ export function Workspace() {
               params={params}
               photo={photo}
               derived={editedMask}
+              contour={contour}
+              offsetContour={offsetContour}
               scaleMmPerPx={scaleMmPerPx}
               onUpload={(file) => {
                 reset();

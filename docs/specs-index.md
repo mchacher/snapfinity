@@ -18,7 +18,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 011 | [segmentation](../specs/011-segmentation/) | ✅ Done | Object matting (u2netp ONNX) + token exclusion → tool silhouette. Iteration 7. |
 | 012 | [browser-vision](../specs/012-browser-vision/) | ✅ Done | Vision in the browser: photo upload → token + u2netp mask, **live overlay** + auto-size. onnxruntime-web, shared `cleanMask`, 2-tab layout. Iteration 8 (part 1). |
 | 013 | [contour](../specs/013-contour/) | ✅ Done | Outer contour + live **smoothing**/**clearance**, contextual left panel, header-tab layout, green-mask opacity, **detection threshold**, **brightness/contrast** + **flatten background** (anti-shadow). Iteration 8 (part 2). |
-| 014 | [mask-brush](../specs/014-mask-brush/) | In review | Manual **add/erase brush** on the mask to fine-tune; edits composited over the auto mask (persist across auto-params), contour re-derives live. Iteration 8 (part 3). |
+| 014 | [mask-brush](../specs/014-mask-brush/) | ✅ Done | Manual **add/erase brush** on the mask to fine-tune; edits composited over the auto mask (persist across auto-params), contour re-derives live. Iteration 8 (part 3). |
+| 015 | [pocket-e2e](../specs/015-pocket-e2e/) | In review | Feed the offset contour (→ mm, centred) into the bin **pocket** — real object-shaped cavity in the 3D preview + STL/STEP. CAD rebuild gated to the Preview tab. Iteration 9. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

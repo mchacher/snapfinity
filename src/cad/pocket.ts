@@ -26,7 +26,9 @@ export function makeBinWithPocket(
   }
   const { floorMm = 1 } = options;
   const topZ = params.heightUnits * HEIGHT_UNIT_MM;
-  const depthMm = options.depthMm ?? topZ - floorMm;
+  const maxDepth = topZ - floorMm;
+  // Clamp to keep a floor: a requested depth ≥ the body would cut through the bottom.
+  const depthMm = Math.min(options.depthMm ?? maxDepth, maxDepth);
   if (depthMm <= 0) {
     throw new Error(`pocket depth must be > 0, got ${depthMm}`);
   }
