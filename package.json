@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sample": "tsx tools/cad/sample.ts",
+    "verify:vision": "tsx tools/cv/verify.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -41,7 +42,9 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "@techstark/opencv-js": "^4.12.0-release.1",
     "clipper-lib": "^6.4.2",
+    "jpeg-js": "^0.4.4",
     "lucide-react": "^1.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
