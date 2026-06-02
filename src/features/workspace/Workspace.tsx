@@ -6,7 +6,7 @@ import { Viewer } from './Viewer';
 import { useBin } from './useBin';
 import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { useMaskEdit } from './useMaskEdit';
-import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
+import { binFilename, downloadBlob } from '../../cad/export';
 import { gridForFootprint } from '../../core/sizing';
 import { smoothContour } from '../../core/contour';
 import { offsetPolygon } from '../../core/offset';
@@ -106,8 +106,9 @@ export function Workspace() {
     return contourToFootprintMm(ring, scaleMmPerPx);
   }, [offsetContour, contour, scaleMmPerPx]);
 
-  // Build the bin only on the Preview tab (replicad is main-thread — don't freeze painting).
-  const { geometry, shape, status } = useBin(params, footprintMm, tab === 'preview');
+  // Build the bin only on the Preview tab. replicad now runs in a worker (see useBin), so the
+  // build never freezes the UI; gating just avoids re-cutting while the user paints elsewhere.
+  const { geometry, status, exportBin } = useBin(params, footprintMm, tab === 'preview');
 
   // Auto-size: size the grid so the pocket (object + clearance, in mm) fits the bin's usable
   // INTERIOR — not the hors-tout grid. Sized from the footprint bbox + the inner margin.
@@ -129,10 +130,9 @@ export function Workspace() {
     }
   }, [footprintMm, params.manualSize, params.pitchMm, params.cols, params.rows]);
 
-  const exportFile = (format: 'stl' | 'step') => {
-    if (!shape) return;
-    const blob = format === 'stl' ? shapeToStl(shape) : shapeToStep(shape);
-    downloadBlob(blob, binFilename(params.cols, params.rows, format));
+  const exportFile = async (format: 'stl' | 'step') => {
+    const blob = await exportBin(format);
+    if (blob) downloadBlob(blob, binFilename(params.cols, params.rows, format));
   };
 
   return (

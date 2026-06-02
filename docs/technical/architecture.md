@@ -153,3 +153,20 @@ everything works **offline** with no CDN. Inference is single-threaded (`numThre
 avoid needing cross-origin isolation (COOP/COEP) on static hosts. The mask cleanup
 (`src/vision/isolate.ts`) is **shared** with the Node `verify:seg` script — one implementation,
 two callers. Pure helpers (`maskBBox`, `footprintFromBBox`) stay cv-free and unit-tested.
+
+Inference runs on **WebGPU when available, falling back to WASM** (spec 016): the provider
+list is `['webgpu','wasm']` if `navigator.gpu` exists, else `['wasm']` — WebGPU runs the
+conv-heavy u2netp several× faster, with no regression where it's absent.
+
+## 10. CAD in a web worker (spec 017)
+
+replicad's build + meshing + STL/STEP export run in a **dedicated module worker**
+(`src/cad/cad.worker.ts`), not on the main thread — so a rebuild on the Preview tab never
+freezes the UI (the 3D view keeps orbiting, the spinner really spins) and export no longer
+blocks. The `Shape3D` is a live OpenCascade WASM handle bound to the worker's OC instance, so
+it **cannot cross the thread boundary**: the worker keeps it, returns a **transferable mesh**
+(`positions`/`normals`/`index` typed arrays → `arraysToGeometry` on the main thread), and is
+also the only place that can **export** it (hence export is async). A small `cad-client.ts`
+owns the worker and routes replies by request `id`. Because the client's replicad imports are
+**type-only**, replicad's ~11 MB WASM leaves the main bundle entirely. The build is still
+gated to the Preview tab and debounced (`useBin`).
