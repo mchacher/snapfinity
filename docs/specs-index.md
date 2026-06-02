@@ -11,7 +11,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 004 | [gridfinity-foot](../specs/004-gridfinity-foot/) | ✅ Done | Real Gridfinity foot + stacking lip (adapted from replicad's MIT example), parametric pitch 20–84 mm, no magnets. |
 | 005 | [offset-clipper](../specs/005-offset-clipper/) | ✅ Done | Polygon clearance offset (clipper-lib), pure core. Iteration 5. |
 | 006 | [tool-pocket](../specs/006-tool-pocket/) | ✅ Done | Tool-shaped pocket cut into the bin (synthetic footprint); `hollow` option; meshing fix. Iteration 3. |
-| 007 | [cad-refinements](../specs/007-cad-refinements/) | In review | Foot → spec 4.75 mm; STL mesh tolerance (2×1: 17.5 MB → 0.84 MB). |
+| 007 | [cad-refinements](../specs/007-cad-refinements/) | ✅ Done | Foot → spec 4.75 mm; STL mesh tolerance (2×1: 17.5 MB → 0.84 MB). |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
