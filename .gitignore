@@ -23,3 +23,6 @@ coverage/
 # OS / editor
 .DS_Store
 *.log
+
+# Generated review overlays (transient)
+dataset/tmp/

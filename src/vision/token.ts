@@ -23,11 +23,16 @@ export interface DetectOptions {
   maxScore?: number;
 }
 
-function thresholded(gray: Mat): Mat {
+/**
+ * Isolate the near-black token. It is much darker than any background (white paper or wood
+ * grain), so a fixed dark cut is more robust than global Otsu — which, on textured wood,
+ * leaks grain into the token contour and loosens the detected circle.
+ */
+function thresholded(gray: Mat, darkCut = 100): Mat {
   const blur = new cv.Mat();
   cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
   const thresh = new cv.Mat();
-  cv.threshold(blur, thresh, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+  cv.threshold(blur, thresh, darkCut, 255, cv.THRESH_BINARY_INV);
   blur.delete();
   return thresh;
 }

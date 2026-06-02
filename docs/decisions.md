@@ -2,6 +2,14 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Vision quality scope + live contour adjustment
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 10 | **Token threshold** | Token detection uses a **fixed dark cut** (`THRESH_BINARY_INV @ 100`), not global Otsu. The token is near-black on any background; Otsu leaked wood grain into the contour and loosened the circle. Worst case (pen-wood) matchShapes 0.607 → 0.358; still 36/36 detected; white unaffected. |
+| 11 | **Background scope** | **Optimise for a white/light background** — the supported, recommended scenario (clean masks + tight token circle). Wood/textured backgrounds are knowingly degraded (u2netp saliency limit); not a target for now. Surface "plain light background" as user guidance in the UI. |
+| 12 | **Contour adjustment** | The mask→contour step must expose **live, visually-adjusted sliders**: a **smoothing/tolerance** control (less pixelation, rounder corners — chaikin/spline or mask blur+approxPolyDP) plus the existing **clearance** offset. The user adjusts and the contour overlay on the photo updates **in real time**, before any 3D pocket is generated. Belongs to the contour-extraction iteration (next). |
+
 ## 2026-06-02 — Q&A batch (unblocks UI + vision)
 
 | # | Topic | Decision |

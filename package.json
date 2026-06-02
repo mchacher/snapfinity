@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "sample": "tsx tools/cad/sample.ts",
     "verify:vision": "tsx tools/cv/verify.ts",
+    "verify:seg": "tsx tools/cv/segment-verify.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -30,6 +31,7 @@
     "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.9.0",
+    "onnxruntime-node": "^1.26.0",
     "prettier": "^3.8.3",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.4",

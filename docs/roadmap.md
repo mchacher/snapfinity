@@ -42,6 +42,21 @@ measurable test case (IoU), not an eyeball check.
 | 8   | End-to-end wiring + UX                   | photo→bin→preview→export; params (pitch, base variant, height, offset) | integration: 1 photo→valid STL; manual UX | coherent product |
 | 9+  | Base variants, free pitch, mobile, deploy | …                                                           | …                                                  | polish |
 
+## Contour extraction (next iteration)
+
+Bridges segmentation (it 7) → pocket (it 3 CAD). The mask is binary at pixel resolution, so
+its raw contour is jagged → a pixelated pocket. This iteration turns the mask into a clean,
+**user-tunable** contour:
+
+- **Smoothing / tolerance slider** — less pixelation, rounder corners. Likely mask
+  blur + re-threshold and/or `approxPolyDP` + chaikin/spline resample; one knob from
+  "faithful" to "smooth".
+- **Clearance slider** — the offset already decided (default 1.0 mm).
+- **Live visual feedback** — the contour overlay on the photo redraws in **real time** as
+  the sliders move, *before* generating the 3D pocket. This is the core UX requirement: the
+  tool is an interactive visual adjuster, not a one-shot pipeline.
+- Scope target: **white/light background** (see decisions #11).
+
 ## Notes
 
 - UI framework is decided at **it 4** (the scaffold in it 0 stays framework-agnostic).
