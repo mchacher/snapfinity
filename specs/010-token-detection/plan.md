@@ -15,7 +15,7 @@
 - [x] verify script (whole dataset)
 - [x] **36/36 (100%)** detection
 - [x] typecheck / lint / vitest / build green (opencv not bundled)
-- [ ] PR + CI green
+- [x] PR + CI green (#11, merged)
 
 ## Validation
 
