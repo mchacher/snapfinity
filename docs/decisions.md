@@ -2,6 +2,12 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Image pre-process (brightness/contrast)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 17 | **Confidently-segmented shadows** | The threshold only drops *low-confidence* shadows; a cast shadow the model confidently includes (e.g. the cutter's right side) needs attacking **upstream**. Add **Luminosité + Contraste** sliders applied to the image **before u2netp** — washing light shadows on a white background toward white so the model stops segmenting them. Verified on the cutter. It changes the model input, so it **re-runs the inference** (debounced ~450 ms), unlike the live threshold. Pixel maths is the pure `adjustRgba`. **Memory:** the model input (320²) is adjusted in `analyze`; the *displayed* photo is adjusted in the overlay at canvas resolution (never the full-res buffer). A module-level **decode cache** keyed by file means a brightness change re-runs only adjust + inference, not the full-res decode — fixing a renderer crash from tripled peak memory. |
+
 ## 2026-06-02 — Detection threshold (shadow control)
 
 | # | Topic | Decision |

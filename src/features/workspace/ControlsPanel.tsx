@@ -33,6 +33,24 @@ export function ControlsPanel({ params, set, tab }: Props) {
             step={0.1}
           />
         </Section>
+        <Section title={t('params.image')}>
+          <Slider
+            label={t('params.brightness')}
+            value={params.brightness}
+            onChange={(v) => set('brightness', v)}
+            min={-80}
+            max={80}
+            step={5}
+          />
+          <Slider
+            label={t('params.contrast')}
+            value={params.contrast}
+            onChange={(v) => set('contrast', v)}
+            min={-80}
+            max={80}
+            step={5}
+          />
+        </Section>
         <Section title={t('params.display')}>
           <Toggle label={t('params.maskShow')} checked={params.showMask} onChange={(v) => set('showMask', v)} />
           {params.showMask && (

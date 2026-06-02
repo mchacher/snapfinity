@@ -2,7 +2,7 @@ import cv from '@techstark/opencv-js';
 import type { Mat } from './cv';
 import { loadPhoto } from './image-source';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
-import { SEG_SIZE, saliencyToMask } from './segment';
+import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
 import { runSaliency } from './seg-runtime';
 import { cleanMask } from './isolate';
 import { outerContour } from './contour-cv';
@@ -32,6 +32,10 @@ export interface DerivedMask {
 
 export interface AnalyzeOptions {
   tokenOdMm?: number;
+  /** Pre-inference brightness offset (washes light shadows toward white). */
+  brightness?: number;
+  /** Pre-inference contrast (classic factor formula). */
+  contrast?: number;
 }
 
 let refPromise: Promise<Mat> | null = null;
@@ -55,24 +59,46 @@ function getRefContour(): Promise<Mat> {
  * object (u2netp), isolate the tool, and derive the auto grid size. Everything runs locally;
  * the photo never leaves the browser.
  */
+interface DecodeCache {
+  file: Blob;
+  imageData: ImageData;
+  seg320: Uint8ClampedArray;
+  width: number;
+  height: number;
+  det: ReturnType<typeof detectToken>;
+}
+
+// One decoded photo at a time. Re-running for a brightness/contrast change reuses this so we
+// don't re-decode the full-res image (Mat + canvas + ImageData ≈ tens of MB) every change —
+// that tripled peak memory and crashed the tab. Only adjustRgba(seg320) + inference re-run.
+let decodeCache: DecodeCache | null = null;
+
 export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Promise<PhotoAnalysis> {
-  const { tokenOdMm = TOKEN_OD_MM } = options;
-  const ref = await getRefContour();
-  const { imageData, grayMat, seg320, width, height } = await loadPhoto(file);
+  const { tokenOdMm = TOKEN_OD_MM, brightness = 0, contrast = 0 } = options;
 
-  const det = detectToken(grayMat, ref, { tokenOdMm });
-  grayMat.delete();
-  const scaleMmPerPx = det.found ? det.scaleMmPerPx : null;
+  if (decodeCache?.file !== file) {
+    const ref = await getRefContour();
+    const { imageData, grayMat, seg320, width, height } = await loadPhoto(file);
+    // Token detection runs on the *original* gray (stable calibration, independent of the
+    // brightness/contrast a user dials in for segmentation).
+    const det = detectToken(grayMat, ref, { tokenOdMm });
+    grayMat.delete();
+    decodeCache = { file, imageData, seg320, width, height, det };
+  }
+  const c = decodeCache;
 
-  const saliency = await runSaliency(seg320);
+  // Pre-process the model input only (tiny 320² buffer). The overlay applies the same
+  // brightness/contrast to the displayed photo at canvas resolution.
+  const adjusted = brightness !== 0 || contrast !== 0;
+  const saliency = await runSaliency(adjusted ? adjustRgba(c.seg320, brightness, contrast) : c.seg320);
 
   return {
-    imageData,
-    width,
-    height,
-    scaleMmPerPx,
-    token: det.found
-      ? { found: true, centerPx: det.centerPx, radiusPx: det.radiusPx, score: det.score }
+    imageData: c.imageData,
+    width: c.width,
+    height: c.height,
+    scaleMmPerPx: c.det.found ? c.det.scaleMmPerPx : null,
+    token: c.det.found
+      ? { found: true, centerPx: c.det.centerPx, radiusPx: c.det.radiusPx, score: c.det.score }
       : { found: false },
     saliency,
   };

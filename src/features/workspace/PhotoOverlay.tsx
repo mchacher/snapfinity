@@ -39,6 +39,8 @@ export function PhotoOverlay({
   contour = [],
   offsetContour = [],
   maskOpacity = 0.45,
+  brightness = 0,
+  contrast = 0,
 }: {
   analysis: PhotoAnalysis;
   /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
@@ -51,6 +53,9 @@ export function PhotoOverlay({
   offsetContour?: Point2D[];
   /** Green mask tint strength, 0 (off) … 1 (opaque). */
   maskOpacity?: number;
+  /** Display brightness/contrast — mirrors what u2netp saw (applied at canvas resolution). */
+  brightness?: number;
+  contrast?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -74,23 +79,34 @@ export function PhotoOverlay({
     tmp.getContext('2d')?.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, 0, 0, cw, ch);
 
-    // green mask tint — nearest-sample the mask by its own dims (it's at working resolution),
-    // blend toward green by maskOpacity
-    if (mask && maskOpacity > 0) {
-      const a = Math.min(1, maskOpacity);
-      const mw = mask.width;
-      const mh = mask.height;
+    // One pixel pass at canvas resolution: brightness/contrast (mirrors the model input) + the
+    // green mask tint. Cheap (≤ MAX_SIDE²) — never touches the full-res image.
+    const tintMask = !!mask && maskOpacity > 0;
+    if (brightness !== 0 || contrast !== 0 || tintMask) {
       const frame = ctx.getImageData(0, 0, cw, ch);
       const d = frame.data;
-      for (let y = 0; y < ch; y += 1) {
-        const my = Math.min(mh - 1, Math.floor((y / ch) * mh));
-        for (let x = 0; x < cw; x += 1) {
-          const mx = Math.min(mw - 1, Math.floor((x / cw) * mw));
-          if (mask.data[my * mw + mx] > 0) {
-            const i = (y * cw + x) * 4;
-            d[i] = Math.round(d[i] * (1 - a) + 64 * a);
-            d[i + 1] = Math.round(d[i + 1] * (1 - a) + 200 * a);
-            d[i + 2] = Math.round(d[i + 2] * (1 - a) + 80 * a);
+      if (brightness !== 0 || contrast !== 0) {
+        const f = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = f * (d[i] - 128) + 128 + brightness;
+          d[i + 1] = f * (d[i + 1] - 128) + 128 + brightness;
+          d[i + 2] = f * (d[i + 2] - 128) + 128 + brightness;
+        }
+      }
+      if (mask && tintMask) {
+        const a = Math.min(1, maskOpacity);
+        const mw = mask.width;
+        const mh = mask.height;
+        for (let y = 0; y < ch; y += 1) {
+          const my = Math.min(mh - 1, Math.floor((y / ch) * mh));
+          for (let x = 0; x < cw; x += 1) {
+            const mx = Math.min(mw - 1, Math.floor((x / cw) * mw));
+            if (mask.data[my * mw + mx] > 0) {
+              const i = (y * cw + x) * 4;
+              d[i] = d[i] * (1 - a) + 64 * a;
+              d[i + 1] = d[i + 1] * (1 - a) + 200 * a;
+              d[i + 2] = d[i + 2] * (1 - a) + 80 * a;
+            }
           }
         }
       }
@@ -118,7 +134,7 @@ export function PhotoOverlay({
     // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
     drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
-  }, [analysis, mask, bbox, contour, offsetContour, maskOpacity]);
+  }, [analysis, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
 
   return <canvas ref={ref} className="max-h-full max-w-full rounded-lg" />;
 }

@@ -20,6 +20,10 @@ export interface Params {
   offsetMm: number;
   /** Contour smoothing knob, 0 (faithful) … 1 (smooth). */
   smoothingFactor: number;
+  /** Pre-inference image brightness (washes light shadows toward white). */
+  brightness: number;
+  /** Pre-inference image contrast. */
+  contrast: number;
   /** u2netp saliency cut, higher = stricter (drops shadows). */
   detectThreshold: number;
   /** Show the green segmentation tint over the photo. */
@@ -40,6 +44,8 @@ const initialParams: Params = {
   thicknessMm: 18,
   offsetMm: 1,
   smoothingFactor: 0.3,
+  brightness: 0,
+  contrast: 0,
   detectThreshold: 0.5,
   showMask: true,
   maskOpacity: 0.45,
@@ -54,7 +60,7 @@ export function Workspace() {
     setParams((prev) => ({ ...prev, [key]: value }));
 
   const { geometry, shape, status } = useBin(params);
-  const photo = usePhotoAnalysis();
+  const photo = usePhotoAnalysis({ brightness: params.brightness, contrast: params.contrast });
   const derived = useDerivedMask(photo.result, params.detectThreshold);
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so
@@ -98,7 +104,7 @@ export function Workspace() {
               photo={photo}
               derived={derived}
               scaleMmPerPx={scaleMmPerPx}
-              onUpload={(file) => photo.analyze(file, params.tokenOdMm)}
+              onUpload={(file) => photo.setFile(file)}
             />
           </div>
           <div className={tab === 'preview' ? 'h-full' : 'hidden'}>

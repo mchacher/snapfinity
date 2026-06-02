@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
@@ -6,33 +6,60 @@ export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
 export interface PhotoAnalysisState {
   status: AnalysisStatus;
   result: PhotoAnalysis | null;
-  analyze: (file: Blob, tokenOdMm: number) => void;
+  setFile: (file: File | null) => void;
 }
 
 /**
- * Run the in-browser vision pipeline on an uploaded photo. The heavy WASM (opencv.js +
- * onnxruntime-web + u2netp) is dynamically imported on the first photo, so it never lands
- * in the entry chunk / blocks first paint.
+ * Run the in-browser vision pipeline on the current photo + brightness/contrast. The heavy
+ * WASM (opencv.js + onnxruntime-web + u2netp) is dynamically imported on the first photo, so
+ * it never lands in the entry chunk / blocks first paint. A new photo analyses immediately;
+ * brightness/contrast changes re-run the inference **debounced** (they alter the model input).
  */
-export function usePhotoAnalysis(): PhotoAnalysisState {
+export function usePhotoAnalysis({ brightness, contrast }: { brightness: number; contrast: number }): PhotoAnalysisState {
+  const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<AnalysisStatus>('idle');
   const [result, setResult] = useState<PhotoAnalysis | null>(null);
+  const lastFile = useRef<File | null>(null);
 
-  const analyze = useCallback((file: Blob, tokenOdMm: number) => {
+  useEffect(() => {
+    if (!file) {
+      lastFile.current = null;
+      setStatus('idle');
+      setResult(null);
+      return;
+    }
+    const freshFile = lastFile.current !== file;
+    lastFile.current = file;
+    let cancelled = false;
     setStatus('analyzing');
-    void (async () => {
-      try {
-        const { analyzePhoto } = await import('../../vision/analyze');
-        setResult(await analyzePhoto(file, { tokenOdMm }));
-        setStatus('ready');
-      } catch (err) {
-        console.error('photo analysis failed', err);
-        setStatus('error');
-      }
-    })();
-  }, []);
+    const run = () =>
+      void (async () => {
+        try {
+          const { analyzePhoto } = await import('../../vision/analyze');
+          const r = await analyzePhoto(file, { brightness, contrast });
+          if (!cancelled) {
+            setResult(r);
+            setStatus('ready');
+          }
+        } catch (err) {
+          console.error('photo analysis failed', err);
+          if (!cancelled) setStatus('error');
+        }
+      })();
+    if (freshFile) {
+      run();
+      return () => {
+        cancelled = true;
+      };
+    }
+    const timer = setTimeout(run, 450); // adjustment change → re-infer, debounced
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [file, brightness, contrast]);
 
-  return { status, result, analyze };
+  return { status, result, setFile };
 }
 
 /**

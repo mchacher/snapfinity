@@ -53,7 +53,7 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }:
 
   const hidden = <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />;
 
-  if (photo.status === 'ready' && photo.result) {
+  if (photo.result) {
     return (
       <div className="relative h-full">
         <div className="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center gap-2">
@@ -64,6 +64,12 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }:
             <Chip tone="neutral">
               {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
             </Chip>
+          )}
+          {photo.status === 'analyzing' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm backdrop-blur">
+              <Loader2 size={12} className="animate-spin" />
+              {t('photo.analyzing')}
+            </span>
           )}
           <span className="flex-1" />
           <button
@@ -82,6 +88,8 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }:
             contour={contour}
             offsetContour={offsetContour}
             maskOpacity={params.showMask ? params.maskOpacity : 0}
+            brightness={params.brightness}
+            contrast={params.contrast}
           />
         </div>
         {hidden}
