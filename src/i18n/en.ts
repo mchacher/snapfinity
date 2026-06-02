@@ -1,5 +1,6 @@
 export const en = {
   app: { tagline: 'Photo → Gridfinity bin' },
+  tabs: { outline: 'Outline', preview: '3D preview' },
   photo: {
     title: 'Photo',
     drop: 'Drop a photo (object + token)',

@@ -2,6 +2,7 @@ import type { Dict } from './en';
 
 export const fr: Dict = {
   app: { tagline: 'Photo → bac Gridfinity' },
+  tabs: { outline: 'Détourage', preview: 'Aperçu 3D' },
   photo: {
     title: 'Photo',
     drop: 'Dépose une photo (objet + token)',

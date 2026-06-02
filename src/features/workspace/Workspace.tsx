@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
+import { OutlinePanel } from './OutlinePanel';
 import { Viewer } from './Viewer';
 import { useBin } from './useBin';
 import { usePhotoAnalysis } from './usePhotoAnalysis';
+import { Tabs } from '../../ui/Tabs';
+import { useI18n } from '../../i18n';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
 import { footprintFromBBox } from '../../core/sizing';
 
@@ -34,7 +37,9 @@ const initialParams: Params = {
 };
 
 export function Workspace() {
+  const { t } = useI18n();
   const [params, setParams] = useState<Params>(initialParams);
+  const [tab, setTab] = useState<'outline' | 'preview'>('outline');
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
@@ -68,16 +73,31 @@ export function Workspace() {
       <Header onExport={exportFile} canExport={status === 'ready'} />
       <main className="grid flex-1 overflow-hidden lg:grid-cols-[340px_1fr]">
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
-          <ControlsPanel
-            params={params}
-            set={set}
-            photo={photo}
-            scaleMmPerPx={scaleMmPerPx}
-            onUpload={(file) => photo.analyze(file, params.tokenOdMm)}
-          />
+          <ControlsPanel params={params} set={set} />
         </aside>
-        <section className="min-h-[320px] p-4">
-          <Viewer geometry={geometry} status={status} />
+        <section className="flex min-h-0 flex-col p-4">
+          <Tabs
+            tabs={[
+              { id: 'outline', label: t('tabs.outline') },
+              { id: 'preview', label: t('tabs.preview') },
+            ]}
+            active={tab}
+            onChange={(id) => setTab(id as 'outline' | 'preview')}
+          />
+          <div className="relative mt-3 min-h-0 flex-1">
+            <div className={tab === 'outline' ? 'h-full' : 'hidden'}>
+              <OutlinePanel
+                params={params}
+                set={set}
+                photo={photo}
+                scaleMmPerPx={scaleMmPerPx}
+                onUpload={(file) => photo.analyze(file, params.tokenOdMm)}
+              />
+            </div>
+            <div className={tab === 'preview' ? 'h-full' : 'hidden'}>
+              <Viewer geometry={geometry} status={status} />
+            </div>
+          </div>
         </section>
       </main>
     </div>

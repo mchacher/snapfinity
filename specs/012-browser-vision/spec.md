@@ -49,9 +49,13 @@ sliders; the photo drop zone is a stub. This spec wires the real pipeline into t
   `gridFootprint`.
 - **R5 — Pure helpers (unit-tested).** `maskBBox(mask,w,h)` (tight bbox of set pixels) and
   `footprintFromBBox(bboxPx, scaleMmPerPx, pitchMm)` (px → mm → `gridFootprint`).
-- **R6 — UI.** Photo upload + an **overlay canvas** in the photo area (photo + mask tint +
-  token circle). Auto-size cols/rows when `manualSize` is off; show scale + token pills.
-  Loading/error states; clear message when no token / no object.
+- **R6 — UI.** The main area is **two tabs**: **Outline** (the photo at a workable size with
+  the overlay — mask tint + token circle + bbox — upload via click/drag-drop, token-OD field,
+  scale/token pills) and **3D preview** (the existing viewer). Both stay mounted (CSS toggle)
+  so the WebGL context and bin aren't rebuilt on tab switch. The left panel holds only the
+  parameters. Auto-size cols/rows when `manualSize` is off. Loading/error states; clear
+  message when no token / no object. (The Outline tab is also where 013's contour sliders +
+  mask brush will live.)
 
 ## Acceptance criteria
 
