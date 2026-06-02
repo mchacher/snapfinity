@@ -7,6 +7,7 @@ import { flattenRgba } from './flatten';
 import { runSaliency } from './seg-runtime';
 import { cleanMask } from './isolate';
 import { outerContour } from './contour-cv';
+import { compositeMask } from './mask-edit';
 import { maskBBox, type BBox, type TokenCircle } from './mask';
 import type { Point2D } from '../core/offset';
 
@@ -149,4 +150,27 @@ export function deriveMask(a: PhotoAnalysis, threshold: number): DerivedMask {
     : null;
 
   return { mask: { data: maskData, width: ww, height: wh }, objectBBoxPx, outline };
+}
+
+/**
+ * Composite the user's brush edits over the auto mask and re-derive the contour + bbox from the
+ * result. Works at the base mask's resolution (≤ WORK_MAX) → cheap enough to drive painting;
+ * the outline + bbox are scaled to full-res px. Requires opencv.js ready.
+ */
+export function applyEdits(base: DerivedMask, editLayer: Uint8Array, fullW: number, fullH: number): DerivedMask {
+  const w = base.mask.width;
+  const h = base.mask.height;
+  const eff = compositeMask(base.mask.data, editLayer);
+
+  const m = cv.matFromArray(h, w, cv.CV_8UC1, Array.from(eff));
+  const outlineWork = outerContour(m); // may mutate m — done after
+  m.delete();
+
+  const sx = fullW / w;
+  const sy = fullH / h;
+  const outline: Point2D[] = outlineWork.map(([x, y]) => [x * sx, y * sy]);
+  const bbox = maskBBox(eff, w, h);
+  const objectBBoxPx = bbox ? { x: bbox.x * sx, y: bbox.y * sy, w: bbox.w * sx, h: bbox.h * sy } : null;
+
+  return { mask: { data: eff, width: w, height: h }, objectBBoxPx, outline };
 }

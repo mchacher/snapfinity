@@ -5,6 +5,7 @@ import { OutlinePanel } from './OutlinePanel';
 import { Viewer } from './Viewer';
 import { useBin } from './useBin';
 import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
+import { useMaskEdit } from './useMaskEdit';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
 import { footprintFromBBox } from '../../core/sizing';
 
@@ -28,6 +29,10 @@ export interface Params {
   contrast: number;
   /** u2netp saliency cut, higher = stricter (drops shadows). */
   detectThreshold: number;
+  /** Brush: add paints object, erase removes it. */
+  brushMode: 'add' | 'erase';
+  /** Brush radius in canvas CSS px. */
+  brushSize: number;
   /** Show the green segmentation tint over the photo. */
   showMask: boolean;
   /** Green tint strength when shown, 0 … 1. */
@@ -50,6 +55,8 @@ const initialParams: Params = {
   brightness: 0,
   contrast: 0,
   detectThreshold: 0.5,
+  brushMode: 'add',
+  brushSize: 24,
   showMask: true,
   maskOpacity: 0.45,
   includeLip: true,
@@ -69,22 +76,27 @@ export function Workspace() {
     contrast: params.contrast,
   });
   const derived = useDerivedMask(photo.result, params.detectThreshold);
+  const { editedMask, hasEdits, paint, reset } = useMaskEdit(
+    derived,
+    photo.result?.width ?? 0,
+    photo.result?.height ?? 0,
+  );
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so
   // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
   const tokenRadiusPx = photo.result?.token.found ? (photo.result.token.radiusPx ?? null) : null;
   const scaleMmPerPx = tokenRadiusPx ? params.tokenOdMm / (2 * tokenRadiusPx) : null;
 
-  // Auto-size: derive cols/rows from the object bbox × scale, unless the user took over.
+  // Auto-size: derive cols/rows from the (edited) object bbox × scale, unless the user took over.
   useEffect(() => {
     if (params.manualSize) return;
-    const bbox = derived?.objectBBoxPx;
+    const bbox = editedMask?.objectBBoxPx;
     if (!bbox) return;
     const fp = footprintFromBBox(bbox, scaleMmPerPx, params.pitchMm);
     if (fp && (fp.cols !== params.cols || fp.rows !== params.rows)) {
       setParams((p) => ({ ...p, cols: fp.cols, rows: fp.rows }));
     }
-  }, [derived, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
+  }, [editedMask, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
 
   const exportFile = (format: 'stl' | 'step') => {
     if (!shape) return;
@@ -102,16 +114,20 @@ export function Workspace() {
       />
       <main className="grid flex-1 overflow-hidden lg:grid-cols-[340px_1fr]">
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
-          <ControlsPanel params={params} set={set} tab={tab} />
+          <ControlsPanel params={params} set={set} tab={tab} onResetEdits={reset} hasEdits={hasEdits} />
         </aside>
         <section className="relative min-h-0 p-4">
           <div className={tab === 'outline' ? 'h-full' : 'hidden'}>
             <OutlinePanel
               params={params}
               photo={photo}
-              derived={derived}
+              derived={editedMask}
               scaleMmPerPx={scaleMmPerPx}
-              onUpload={(file) => photo.setFile(file)}
+              onUpload={(file) => {
+                reset();
+                photo.setFile(file);
+              }}
+              onPaint={paint}
             />
           </div>
           <div className={tab === 'preview' ? 'h-full' : 'hidden'}>

@@ -5,6 +5,7 @@ import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
 import { smoothContour } from '../../core/contour';
 import { offsetPolygon } from '../../core/offset';
+import { EDIT_ADD, EDIT_ERASE } from '../../vision/mask-edit';
 import type { DerivedMask } from '../../vision/analyze';
 import type { Params } from './Workspace';
 import type { PhotoAnalysisState } from './usePhotoAnalysis';
@@ -15,6 +16,8 @@ interface Props {
   derived: DerivedMask | null;
   scaleMmPerPx: number | null;
   onUpload: (file: File) => void;
+  /** Paint a disc into the edit layer (mask-space) — value chosen from the brush mode. */
+  onPaint: (maskX: number, maskY: number, maskRadius: number, value: number) => void;
 }
 
 /**
@@ -23,7 +26,7 @@ interface Props {
  * (smoothing, clearance, token Ø) live in the contextual left panel; the mask brush lands here
  * in 014.
  */
-export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }: Props) {
+export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload, onPaint }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -90,6 +93,9 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }:
             maskOpacity={params.showMask ? params.maskOpacity : 0}
             brightness={params.brightness}
             contrast={params.contrast}
+            onPaint={(mx, my, mr) => onPaint(mx, my, mr, params.brushMode === 'erase' ? EDIT_ERASE : EDIT_ADD)}
+            brushSize={params.brushSize}
+            brushErase={params.brushMode === 'erase'}
           />
         </div>
         {hidden}
