@@ -1,8 +1,14 @@
 import { assertNonNegative, assertPositive } from './guards';
-import { pxToMm } from './calibration';
 
 /** Gridfinity height increment, in mm. */
 export const HEIGHT_UNIT_MM = 7;
+
+/**
+ * Outer→inner reduction used when auto-sizing: a pocket of width W needs an outer footprint of
+ * `W + BIN_INNER_MARGIN_MM` so it fits the usable interior, not the hors-tout grid. Accounts
+ * for the inter-bin gap (CLEARANCE 0.5) + a wall on each side (~WALL 1.2) — see `cad/bin.ts`.
+ */
+export const BIN_INNER_MARGIN_MM = 0.5 + 2 * 1.2;
 
 /** Supported grid pitches, in mm. Pitches are NOT cross-compatible. */
 export const PITCH = { standard: 42, compact: 36 } as const;
@@ -28,18 +34,13 @@ export function gridFootprint(widthMm: number, depthMm: number, pitchMm: number)
 }
 
 /**
- * Grid footprint for an object's pixel bounding box, given the calibration scale.
- * Returns `null` when there is no usable scale or the box is empty (so the UI keeps the
- * previous size instead of snapping to a bogus 0×0).
+ * Grid footprint for a pocket of the given mm size: the pocket must fit the bin's **usable
+ * interior**, so the outer grid is sized for `dim + BIN_INNER_MARGIN_MM` (not the bare dim).
+ * Returns `null` for an empty footprint (so the UI keeps the previous size).
  */
-export function footprintFromBBox(
-  bboxPx: { w: number; h: number },
-  scaleMmPerPx: number | null,
-  pitchMm: number,
-): GridFootprint | null {
-  if (scaleMmPerPx === null || scaleMmPerPx <= 0) return null;
-  if (bboxPx.w <= 0 || bboxPx.h <= 0) return null;
-  return gridFootprint(pxToMm(bboxPx.w, scaleMmPerPx), pxToMm(bboxPx.h, scaleMmPerPx), pitchMm);
+export function gridForFootprint(widthMm: number, depthMm: number, pitchMm: number): GridFootprint | null {
+  if (widthMm <= 0 || depthMm <= 0) return null;
+  return gridFootprint(widthMm + BIN_INNER_MARGIN_MM, depthMm + BIN_INNER_MARGIN_MM, pitchMm);
 }
 
 /** Number of 7 mm height units a depth needs (ceil, minimum 1). */
