@@ -2,6 +2,32 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Image pre-process (flatten + brightness/contrast)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 18 | **Background flattening (anti-shadow)** | Global brightness/contrast proved too blunt to reliably remove shadows (you over-expose the object before the shadow whitens). Add **« Aplatir le fond »** — a divide-by-blur: a heavy Gaussian estimates the low-frequency background (illumination + soft shadows), and `image / background × 255` normalises the lit-but-shaded background toward white while the locally-darker object stays dark. The classic document-scan shadow remover, effective across photos. Exposed as a **strength slider** (0…1) that blends original↔fully-flattened (`addWeighted`), so it's dosable rather than all-or-nothing. Verified on the cutter (right-side shadow bulge gone at full strength). Applied to the 320² model input only (cheap); the displayed photo is left as-is. Re-infers on change (debounced). If insufficient on hard cases → the brush (014). `flattenRgba` in `vision/flatten.ts`. |
+| 17 | **Confidently-segmented shadows** | The threshold only drops *low-confidence* shadows; a cast shadow the model confidently includes (e.g. the cutter's right side) needs attacking **upstream**. Add **Luminosité + Contraste** sliders applied to the image **before u2netp**. It changes the model input, so it **re-runs the inference** (debounced ~450 ms), unlike the live threshold. Pixel maths is the pure `adjustRgba`. **Memory:** the model input (320²) is adjusted in `analyze`; the *displayed* photo is adjusted in the overlay at canvas resolution (never the full-res buffer). A module-level **decode cache** keyed by file means an adjustment change re-runs only adjust + inference, not the full-res decode — fixing a renderer crash from tripled peak memory. (Superseded as the primary shadow tool by #18.) |
+
+## 2026-06-02 — Detection threshold (shadow control)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 16 | **Shadows in the mask** | Shadows get included because u2netp's saliency is binarised at a fixed cut. Fix: expose a **detection-threshold slider** (`detectThreshold`, 0.3–0.8, default 0.5) — raising it keeps only high-confidence foreground, dropping soft shadows. The mask + contour are **re-derived live from the stored saliency** (`deriveMask` — re-threshold + cv upscale/clean/contour, **no u2netp re-inference**), debounced. Trade-off: too high also drops low-contrast real parts, so it's a user knob. The mask brush (014) handles the residual cases. |
+
+## 2026-06-02 — Global layout (mockup A)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 15 | **View switch in the header** | The Détourage / Aperçu 3D switch is a **segmented control in the header** (centred), not a tab bar above the right panel — it governs both panels, and it fills the otherwise-empty header centre. Chosen from 3 HTML mockups (see `mockups/`). The Détourage right side is a **full-bleed canvas** with a floating bar (status pills + "change photo"); the left panel stays contextual (decisions #14). Mockups rendered + reviewed with Playwright (kept as a dev-only screenshot tool). |
+
+## 2026-06-02 — Détourage iteration scope
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 13 | **Interior holes** | The contour is the **outer outline only** for now (`RETR_EXTERNAL`, largest area); interior holes (scissors/wrench rings) are **filled** in the pocket. Simpler + robust to false holes from segmentation; islands/pillars come later. |
+| 14 | **Détourage split + controls** | Split the work: **013** = contour + smoothing slider + clearance slider + live 2D overlay; **014** = mask **brush** (paint/erase). The **left panel is tab-contextual** (done in 013): Outline tab → contour tools (smoothing, clearance, token Ø); 3D tab → bin params (size, height, thickness, lip). The Outline tab's right side stays a clean photo + overlay. |
+
 ## 2026-06-02 — Vision quality scope + live contour adjustment
 
 | # | Topic | Decision |

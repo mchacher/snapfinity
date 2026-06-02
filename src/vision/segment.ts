@@ -21,6 +21,32 @@ export function rgbaToTensor(rgba: Uint8Array | Uint8ClampedArray): Float32Array
 }
 
 /**
+ * Brightness/contrast adjustment of RGBA pixels (alpha untouched). Pure, unit-tested. Applied
+ * to the segmentation input (and the displayed photo) *before* u2netp, to wash faint shadows
+ * on a light background toward white so the model stops segmenting them. `brightness` is an
+ * additive offset; `contrast` uses the classic factor formula. (0, 0) is the identity.
+ */
+export function adjustRgba(
+  rgba: Uint8Array | Uint8ClampedArray,
+  brightness: number,
+  contrast: number,
+): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(rgba.length);
+  if (brightness === 0 && contrast === 0) {
+    out.set(rgba);
+    return out;
+  }
+  const f = (259 * (contrast + 255)) / (255 * (259 - contrast));
+  for (let i = 0; i < rgba.length; i += 4) {
+    out[i] = f * (rgba[i] - 128) + 128 + brightness;
+    out[i + 1] = f * (rgba[i + 1] - 128) + 128 + brightness;
+    out[i + 2] = f * (rgba[i + 2] - 128) + 128 + brightness;
+    out[i + 3] = rgba[i + 3];
+  }
+  return out;
+}
+
+/**
  * u2netp saliency map → binary mask (0 / 255). The map is min-max normalised, then
  * thresholded. Pure (no WASM) — unit-tested.
  */

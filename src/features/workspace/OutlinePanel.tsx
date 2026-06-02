@@ -1,28 +1,42 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
-import { NumberField } from '../../ui/NumberField';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
+import { smoothContour } from '../../core/contour';
+import { offsetPolygon } from '../../core/offset';
+import type { DerivedMask } from '../../vision/analyze';
 import type { Params } from './Workspace';
 import type { PhotoAnalysisState } from './usePhotoAnalysis';
 
 interface Props {
   params: Params;
-  set: <K extends keyof Params>(key: K, value: Params[K]) => void;
   photo: PhotoAnalysisState;
+  derived: DerivedMask | null;
   scaleMmPerPx: number | null;
   onUpload: (file: File) => void;
 }
 
 /**
- * The "Outline" tab: the photo at a workable size with the detection/segmentation overlay.
- * Home for the live contour sliders + mask brush coming in spec 013.
+ * The "Outline" tab: the photo at a workable size with the detection/segmentation overlay
+ * (mask tint, token circle, smoothed contour + clearance offset). The controls that shape it
+ * (smoothing, clearance, token Ø) live in the contextual left panel; the mask brush lands here
+ * in 014.
  */
-export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Props) {
+export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+
+  // Smoothed outline + clearance offset — pure, recomputed live as the sliders move.
+  const contour = useMemo(
+    () => (derived ? smoothContour(derived.outline, params.smoothingFactor) : []),
+    [derived, params.smoothingFactor],
+  );
+  const offsetContour = useMemo(() => {
+    if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
+    return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
+  }, [contour, scaleMmPerPx, params.offsetMm]);
 
   const openPicker = () => inputRef.current?.click();
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -39,10 +53,10 @@ export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Pro
 
   const hidden = <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />;
 
-  if (photo.status === 'ready' && photo.result) {
+  if (photo.result) {
     return (
-      <div className="flex h-full flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="relative h-full">
+        <div className="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center gap-2">
           <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
             {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
           </Chip>
@@ -51,25 +65,32 @@ export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Pro
               {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
             </Chip>
           )}
+          {photo.status === 'analyzing' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm backdrop-blur">
+              <Loader2 size={12} className="animate-spin" />
+              {t('photo.analyzing')}
+            </span>
+          )}
           <span className="flex-1" />
-          <div className="w-40">
-            <NumberField
-              label={t('photo.tokenOd')}
-              value={params.tokenOdMm}
-              onChange={(v) => set('tokenOdMm', v)}
-              unit="mm"
-              min={1}
-              step={0.1}
-            />
-          </div>
-          <button type="button" onClick={openPicker} className="text-xs text-accent-700 hover:underline">
+          <button
+            type="button"
+            onClick={openPicker}
+            className="rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur transition-colors hover:bg-white"
+          >
             {t('photo.replace')}
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3">
-          <div className="w-full max-w-3xl">
-            <PhotoOverlay analysis={photo.result} />
-          </div>
+        <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+          <PhotoOverlay
+            analysis={photo.result}
+            mask={derived?.mask ?? null}
+            bbox={derived?.objectBBoxPx ?? null}
+            contour={contour}
+            offsetContour={offsetContour}
+            maskOpacity={params.showMask ? params.maskOpacity : 0}
+            brightness={params.brightness}
+            contrast={params.contrast}
+          />
         </div>
         {hidden}
       </div>

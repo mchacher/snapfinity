@@ -9,7 +9,8 @@ describe('App', () => {
   it('renders the workspace shell', () => {
     render(<App />);
     expect(screen.getByText('Snapfinity')).toBeTruthy();
-    // sections render (default language FR)
-    expect(screen.getByText('Général')).toBeTruthy();
+    // tabs render (default language FR); the Outline tab is active → its left-panel section
+    expect(screen.getByText('Aperçu 3D')).toBeTruthy();
+    expect(screen.getByText('Calibration')).toBeTruthy();
   });
 });

@@ -1,21 +1,68 @@
 import { useEffect, useRef } from 'react';
 import type { PhotoAnalysis } from '../../vision/analyze';
+import type { BBox } from '../../vision/mask';
+import type { Point2D } from '../../core/offset';
 
 /** Cap the rendered canvas so a 12 MP phone photo doesn't allocate a huge surface. */
 const MAX_SIDE = 1024;
+
+/** Stroke a closed ring of full-res points, scaled to the canvas. */
+function drawRing(
+  ctx: CanvasRenderingContext2D,
+  ring: Point2D[],
+  scale: number,
+  stroke: string,
+  width: number,
+  dash: number[] = [],
+) {
+  if (ring.length < 2) return;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(ring[0][0] * scale, ring[0][1] * scale);
+  for (let i = 1; i < ring.length; i += 1) ctx.lineTo(ring[i][0] * scale, ring[i][1] * scale);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
 
 /**
  * Draw the analysed photo with the vision overlay: green tint on the isolated tool mask,
  * a cyan token circle, and the object's bounding box — the in-app equivalent of the
  * `verify:seg` overlays, so detection + segmentation can be validated visually.
  */
-export function PhotoOverlay({ analysis }: { analysis: PhotoAnalysis }) {
+export function PhotoOverlay({
+  analysis,
+  mask = null,
+  bbox = null,
+  contour = [],
+  offsetContour = [],
+  maskOpacity = 0.45,
+  brightness = 0,
+  contrast = 0,
+}: {
+  analysis: PhotoAnalysis;
+  /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
+  mask?: { data: Uint8Array; width: number; height: number } | null;
+  /** Object bounding box (full-res px). */
+  bbox?: BBox | null;
+  /** Smoothed outline (full-res px) — drawn solid. */
+  contour?: Point2D[];
+  /** Clearance-offset outline (full-res px) — drawn dashed (the pocket). */
+  offsetContour?: Point2D[];
+  /** Green mask tint strength, 0 (off) … 1 (opaque). */
+  maskOpacity?: number;
+  /** Display brightness/contrast — mirrors what u2netp saw (applied at canvas resolution). */
+  brightness?: number;
+  contrast?: number;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const { imageData, width, height, mask, token, objectBBoxPx } = analysis;
+    const { imageData, width, height, token } = analysis;
 
     const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
     const cw = Math.max(1, Math.round(width * scale));
@@ -32,22 +79,39 @@ export function PhotoOverlay({ analysis }: { analysis: PhotoAnalysis }) {
     tmp.getContext('2d')?.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, 0, 0, cw, ch);
 
-    // green mask tint (nearest-sample the full-res mask)
-    const frame = ctx.getImageData(0, 0, cw, ch);
-    const d = frame.data;
-    for (let y = 0; y < ch; y += 1) {
-      const sy = Math.min(height - 1, Math.floor(y / scale));
-      for (let x = 0; x < cw; x += 1) {
-        const sx = Math.min(width - 1, Math.floor(x / scale));
-        if (mask.data[sy * width + sx] > 0) {
-          const i = (y * cw + x) * 4;
-          d[i] = Math.round(d[i] * 0.35);
-          d[i + 1] = Math.min(255, Math.round(d[i + 1] * 0.35 + 160));
-          d[i + 2] = Math.round(d[i + 2] * 0.35);
+    // One pixel pass at canvas resolution: brightness/contrast (mirrors the model input) + the
+    // green mask tint. Cheap (≤ MAX_SIDE²) — never touches the full-res image.
+    const tintMask = !!mask && maskOpacity > 0;
+    if (brightness !== 0 || contrast !== 0 || tintMask) {
+      const frame = ctx.getImageData(0, 0, cw, ch);
+      const d = frame.data;
+      if (brightness !== 0 || contrast !== 0) {
+        const f = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = f * (d[i] - 128) + 128 + brightness;
+          d[i + 1] = f * (d[i + 1] - 128) + 128 + brightness;
+          d[i + 2] = f * (d[i + 2] - 128) + 128 + brightness;
         }
       }
+      if (mask && tintMask) {
+        const a = Math.min(1, maskOpacity);
+        const mw = mask.width;
+        const mh = mask.height;
+        for (let y = 0; y < ch; y += 1) {
+          const my = Math.min(mh - 1, Math.floor((y / ch) * mh));
+          for (let x = 0; x < cw; x += 1) {
+            const mx = Math.min(mw - 1, Math.floor((x / cw) * mw));
+            if (mask.data[my * mw + mx] > 0) {
+              const i = (y * cw + x) * 4;
+              d[i] = d[i] * (1 - a) + 64 * a;
+              d[i + 1] = d[i + 1] * (1 - a) + 200 * a;
+              d[i + 2] = d[i + 2] * (1 - a) + 80 * a;
+            }
+          }
+        }
+      }
+      ctx.putImageData(frame, 0, 0);
     }
-    ctx.putImageData(frame, 0, 0);
 
     // token circle
     if (token.found && token.centerPx && token.radiusPx) {
@@ -58,15 +122,19 @@ export function PhotoOverlay({ analysis }: { analysis: PhotoAnalysis }) {
       ctx.stroke();
     }
 
-    // object bounding box
-    if (objectBBoxPx) {
+    // object bounding box — only until a contour is shown (then it'd be clutter)
+    if (bbox && contour.length === 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.85)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 4]);
-      ctx.strokeRect(objectBBoxPx.x * scale, objectBBoxPx.y * scale, objectBBoxPx.w * scale, objectBBoxPx.h * scale);
+      ctx.strokeRect(bbox.x * scale, bbox.y * scale, bbox.w * scale, bbox.h * scale);
       ctx.setLineDash([]);
     }
-  }, [analysis]);
 
-  return <canvas ref={ref} className="w-full rounded-lg" />;
+    // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
+    drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
+    drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
+  }, [analysis, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
+
+  return <canvas ref={ref} className="max-h-full max-w-full rounded-lg" />;
 }

@@ -32,6 +32,7 @@
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.9.0",
     "onnxruntime-node": "^1.26.0",
+    "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.4",

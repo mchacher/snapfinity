@@ -58,15 +58,20 @@ auto mask ──(brush add/erase)──▶ corrected mask ──(smoothing)─�
   blur + re-threshold and/or `approxPolyDP` + chaikin/spline resample; one knob from
   "faithful" to "smooth".
 - **Clearance slider** — the offset already decided (default 1.0 mm).
-- **Brush paint / erase** — let the user **correct the mask** directly: fill zones the model
-  missed (the chrome-fork failure), erase stray blobs the cleanup kept. Turns the tool from
-  auto-only into auto + manual fix — the key to usability on real photos. Paint on the binary
-  mask at full res; the contour re-derives from the edited mask. Add/erase modes + brush size.
+- **Brush paint / erase** (→ **014**) — let the user **correct the mask** directly: fill zones
+  the model missed (the chrome-fork failure), erase stray blobs the cleanup kept. Turns the
+  tool from auto-only into auto + manual fix — the key to usability on real photos. Paint on
+  the binary mask at full res; the contour re-derives from the edited mask.
 - **Live visual feedback** — the contour overlay on the photo redraws in **real time** as the
-  sliders move and the user paints, *before* generating the 3D pocket. The core UX: an
-  interactive visual adjuster, not a one-shot pipeline.
-- Scope target: **white/light background** (decisions #11); the brush is what rescues the
-  non-white / glossy cases.
+  sliders move (and, in 014, as the user paints), *before* generating the 3D pocket. The core
+  UX: an interactive visual adjuster, not a one-shot pipeline.
+- Scope target: **white/light background** (decisions #11); the brush (014) is what rescues
+  the non-white / glossy cases.
+
+**Split (decisions #14):** 013 = outer contour + smoothing + clearance + live 2D overlay
+(spec 013). 014 = mask brush. Then the offset contour feeds the 3D pocket (014/015). Outer
+contour only for now (decisions #13). Later: the **left panel becomes tab-contextual**
+(Outline → contour tools, 3D → bin params).
 
 ## Notes
 

@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
+
+# One run per branch/PR; a newer push cancels the superseded in-progress run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:

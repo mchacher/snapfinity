@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Mockup C — onglets header + barre d'outils + scène centrée</title>
+<link rel="stylesheet" href="_base.css" />
+<style>
+  .toolbar { height: 54px; display: flex; align-items: center; gap: 20px; padding: 0 24px; border-bottom: 1px solid #e2e8f0; background: #fff; flex-shrink: 0; }
+  .toolbar .ctl { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #475569; }
+  .toolbar .ctl .slider { width: 96px; }
+  .stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 26px; background: #f1f5f9; }
+  .card { width: min(940px, 100%); height: 100%; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; background: #e9e5df; box-shadow: 0 8px 30px rgba(15,23,42,.10); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">❖</div><div class="brand">Snapfinity</div>
+    <div class="spacer"></div>
+    <div class="seg"><button class="on">Détourage</button><button>Aperçu 3D</button></div>
+    <div class="spacer"></div>
+    <div class="langs"><span class="on">FR</span><span>EN</span></div>
+    <button class="btn">STEP</button><button class="btn primary">⤓ STL</button>
+  </header>
+
+  <div class="toolbar">
+    <span class="pill ok">● Token · détecté</span>
+    <span class="pill neutral">Échelle · 0,194 mm/px</span>
+    <div class="spacer"></div>
+    <div class="ctl"><label>Lissage</label><div class="slider"><i style="width:30%"></i></div></div>
+    <div class="ctl"><label>Jeu</label><div class="slider"><i style="width:33%"></i></div><span class="val">1 mm</span></div>
+    <div class="ctl"><label>Ø token</label><span class="field" style="margin:0">76,2 mm</span></div>
+    <button class="btn" style="height:32px;font-size:12px">Changer de photo</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <svg class="scene" viewBox="0 0 940 560" preserveAspectRatio="xMidYMid slice">
+        <rect width="940" height="560" fill="#e9e5df"/>
+        <path d="M250,66 C346,48 396,168 368,288 C346,394 322,492 250,536 C178,492 154,394 132,288 C104,168 154,84 250,66 Z" fill="#46c34a" fill-opacity="0.42"/>
+        <path d="M250,66 C346,48 396,168 368,288 C346,394 322,492 250,536 C178,492 154,394 132,288 C104,168 154,84 250,66 Z" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="9 6" transform="translate(252 296) scale(1.07) translate(-252 -296)"/>
+        <path d="M250,66 C346,48 396,168 368,288 C346,394 322,492 250,536 C178,492 154,394 132,288 C104,168 154,84 250,66 Z" fill="none" stroke="#2f78d4" stroke-width="4"/>
+        <g transform="translate(720 215)"><circle r="112" fill="none" stroke="#38c8ff" stroke-width="5"/>
+          <g fill="#262626"><circle cx="0" cy="-58" r="15"/><circle cx="50" cy="-29" r="15"/><circle cx="50" cy="29" r="15"/><circle cx="0" cy="58" r="15"/><circle cx="-50" cy="29" r="15"/><circle cx="-50" cy="-29" r="15"/></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+</body>
+</html>

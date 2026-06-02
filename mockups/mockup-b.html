@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Mockup B — onglets header + inspecteur à droite (viewport-first)</title>
+<link rel="stylesheet" href="_base.css" />
+<style>
+  .body { flex: 1; display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
+  main { padding: 18px; min-height: 0; display: flex; }
+  aside { border-left: 1px solid #e2e8f0; overflow: auto; background: #fff; }
+  .canvasWrap { position: relative; flex: 1; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background: #e9e5df; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .canvasBar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; z-index: 2; }
+  .secHint { padding: 14px 18px; font-size: 12px; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">❖</div><div class="brand">Snapfinity</div>
+    <div class="spacer"></div>
+    <div class="seg"><button class="on">Détourage</button><button>Aperçu 3D</button></div>
+    <div class="spacer"></div>
+    <div class="langs"><span class="on">FR</span><span>EN</span></div>
+    <button class="btn">STEP</button><button class="btn primary">⤓ STL</button>
+  </header>
+
+  <div class="body">
+    <main>
+      <div class="canvasWrap">
+        <div class="canvasBar">
+          <span class="pill ok">● Token · détecté</span>
+          <span class="pill neutral">Échelle · 0,194 mm/px</span>
+        </div>
+        <svg class="scene" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice">
+          <rect width="900" height="520" fill="#e9e5df"/>
+          <path d="M210,56 C300,40 348,150 322,262 C302,360 280,452 210,494 C140,452 118,360 98,262 C72,150 120,72 210,56 Z" fill="#46c34a" fill-opacity="0.42"/>
+          <path d="M210,56 C300,40 348,150 322,262 C302,360 280,452 210,494 C140,452 118,360 98,262 C72,150 120,72 210,56 Z" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="9 6" transform="translate(212 270) scale(1.08) translate(-212 -270)"/>
+          <path d="M210,56 C300,40 348,150 322,262 C302,360 280,452 210,494 C140,452 118,360 98,262 C72,150 120,72 210,56 Z" fill="none" stroke="#2f78d4" stroke-width="4"/>
+          <g transform="translate(700 200)"><circle r="104" fill="none" stroke="#38c8ff" stroke-width="5"/>
+            <g fill="#262626"><circle cx="0" cy="-54" r="14"/><circle cx="47" cy="-27" r="14"/><circle cx="47" cy="27" r="14"/><circle cx="0" cy="54" r="14"/><circle cx="-47" cy="27" r="14"/><circle cx="-47" cy="-27" r="14"/></g>
+          </g>
+        </svg>
+      </div>
+    </main>
+    <aside class="panel">
+      <div class="sec"><h3>Détourage</h3>
+        <div class="row"><label>Lissage</label><div class="slider"><i style="width:30%"></i></div><span class="val">0.3</span></div>
+        <div class="row"><label>Jeu</label><div class="slider"><i style="width:33%"></i></div><span class="val">1 mm</span></div>
+      </div>
+      <div class="sec"><h3>Calibration</h3>
+        <div class="row"><label>Ø token</label><span class="field">76,2 mm</span></div>
+      </div>
+      <div class="secHint">Bascule sur <b style="color:#2f78d4">Aperçu 3D</b> pour régler le bac (taille, hauteur, lèvre).</div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

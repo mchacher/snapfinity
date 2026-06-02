@@ -7,6 +7,9 @@ import cv from '@techstark/opencv-js';
 import { loadOpenCv } from '../../src/vision/cv';
 import { detectToken, largestContour } from '../../src/vision/token';
 import { cleanMask } from '../../src/vision/isolate';
+import { outerContour } from '../../src/vision/contour-cv';
+import { smoothContour } from '../../src/core/contour';
+import { offsetPolygon, type Point2D } from '../../src/core/offset';
 import { grayFromJpegFile } from '../../src/vision/cv-image-node';
 import { SEG_SIZE, rgbaToTensor, saliencyToMask } from '../../src/vision/segment';
 
@@ -60,6 +63,24 @@ for (const photo of photos) {
   }
   const over = cv.matFromImageData({ data: overlay, width: raw.width, height: raw.height });
   if (tok.found) cv.circle(over, new cv.Point(tok.centerPx.x, tok.centerPx.y), Math.round(tok.radiusPx), new cv.Scalar(0, 200, 255, 255), 6);
+
+  // contour (013): outer outline → smoothed (solid accent) + 1 mm clearance offset (dashed amber)
+  const drawRing = (ring: Point2D[], color: InstanceType<typeof cv.Scalar>, thickness: number) => {
+    for (let i = 0; i < ring.length; i += 1) {
+      const a = ring[i];
+      const b = ring[(i + 1) % ring.length];
+      cv.line(over, new cv.Point(Math.round(a[0]), Math.round(a[1])), new cv.Point(Math.round(b[0]), Math.round(b[1])), color, thickness);
+    }
+  };
+  const smoothed = smoothContour(outerContour(mask), 0.3); // mutates mask — done reading it
+  if (smoothed.length >= 3) {
+    if (tok.found) {
+      const off = offsetPolygon(smoothed, 1.0 / tok.scaleMmPerPx);
+      if (off.length >= 3) drawRing(off, new cv.Scalar(245, 158, 11, 255), 3);
+    }
+    drawRing(smoothed, new cv.Scalar(47, 120, 212, 255), 4);
+  }
+
   const name = photo.split('/').pop()!.replace(/\.\w+$/, '');
   writeFileSync(`dataset/tmp/seg_${name}.jpg`, jpeg.encode({ data: Buffer.from(over.data), width: raw.width, height: raw.height }, 85).data);
   console.log(`${name}: token=${tok.found ? 'yes' : 'NO'} -> dataset/tmp/seg_${name}.jpg`);

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Mockup A — onglets dans le header + inspecteur gauche</title>
+<link rel="stylesheet" href="_base.css" />
+<style>
+  .body { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  aside { border-right: 1px solid #e2e8f0; overflow: auto; }
+  main { padding: 18px; min-height: 0; display: flex; }
+  .canvasWrap { position: relative; flex: 1; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background: #e9e5df; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .canvasBar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; z-index: 2; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">❖</div><div class="brand">Snapfinity</div>
+    <div class="spacer"></div>
+    <div class="seg"><button class="on">Détourage</button><button>Aperçu 3D</button></div>
+    <div class="spacer"></div>
+    <div class="langs"><span class="on">FR</span><span>EN</span></div>
+    <button class="btn">STEP</button><button class="btn primary">⤓ STL</button>
+  </header>
+
+  <div class="body">
+    <aside class="panel">
+      <div class="sec"><h3>Détourage</h3>
+        <div class="row"><label>Lissage</label><div class="slider"><i style="width:30%"></i></div><span class="val">0.3</span></div>
+        <div class="row"><label>Jeu</label><div class="slider"><i style="width:33%"></i></div><span class="val">1 mm</span></div>
+      </div>
+      <div class="sec"><h3>Calibration</h3>
+        <div class="row"><label>Ø token</label><span class="field">76,2 mm</span></div>
+      </div>
+    </aside>
+    <main>
+      <div class="canvasWrap">
+        <div class="canvasBar">
+          <span class="pill ok">● Token · détecté</span>
+          <span class="pill neutral">Échelle · 0,194 mm/px</span>
+          <div class="spacer"></div>
+          <button class="btn" style="height:30px;font-size:12px;background:rgba(255,255,255,.9)">Changer de photo</button>
+        </div>
+        <svg class="scene" viewBox="0 0 760 480" preserveAspectRatio="xMidYMid slice">
+          <rect width="760" height="480" fill="#e9e5df"/>
+          <path d="M170,46 C246,32 286,128 264,224 C248,312 230,392 170,428 C110,392 92,312 78,224 C56,128 94,60 170,46 Z" fill="#46c34a" fill-opacity="0.42"/>
+          <path d="M170,46 C246,32 286,128 264,224 C248,312 230,392 170,428 C110,392 92,312 78,224 C56,128 94,60 170,46 Z" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="9 6" transform="translate(172 232) scale(1.08) translate(-172 -232)"/>
+          <path d="M170,46 C246,32 286,128 264,224 C248,312 230,392 170,428 C110,392 92,312 78,224 C56,128 94,60 170,46 Z" fill="none" stroke="#2f78d4" stroke-width="4"/>
+          <g transform="translate(580 180)"><circle r="92" fill="none" stroke="#38c8ff" stroke-width="5"/>
+            <g fill="#262626"><circle cx="0" cy="-48" r="13"/><circle cx="42" cy="-24" r="13"/><circle cx="42" cy="24" r="13"/><circle cx="0" cy="48" r="13"/><circle cx="-42" cy="24" r="13"/><circle cx="-42" cy="-24" r="13"/></g>
+          </g>
+        </svg>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
