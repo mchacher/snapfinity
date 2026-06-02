@@ -1,6 +1,6 @@
 // Segmentation verification (it 011): run u2netp on photos, isolate the tool (mask minus the
 // token region from detection), write overlays for visual review. Run: `npm run verify:seg <photos…>`.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as ort from 'onnxruntime-node';
 import cv from '@techstark/opencv-js';
@@ -21,6 +21,7 @@ const refGray = grayFromJpegFile('public/token-ref.jpg');
 const ref = largestContour(refGray);
 refGray.delete();
 
+mkdirSync('dataset/tmp', { recursive: true });
 const photos = process.argv.slice(2);
 for (const photo of photos) {
   const raw = jpeg.decode(readFileSync(photo), { useTArray: true, formatAsRGBA: true });
@@ -60,8 +61,8 @@ for (const photo of photos) {
   const over = cv.matFromImageData({ data: overlay, width: raw.width, height: raw.height });
   if (tok.found) cv.circle(over, new cv.Point(tok.centerPx.x, tok.centerPx.y), Math.round(tok.radiusPx), new cv.Scalar(0, 200, 255, 255), 6);
   const name = photo.split('/').pop()!.replace(/\.\w+$/, '');
-  writeFileSync(`/tmp/seg_${name}.jpg`, jpeg.encode({ data: Buffer.from(over.data), width: raw.width, height: raw.height }, 85).data);
-  console.log(`${name}: token=${tok.found ? 'yes' : 'NO'} -> /tmp/seg_${name}.jpg`);
+  writeFileSync(`dataset/tmp/seg_${name}.jpg`, jpeg.encode({ data: Buffer.from(over.data), width: raw.width, height: raw.height }, 85).data);
+  console.log(`${name}: token=${tok.found ? 'yes' : 'NO'} -> dataset/tmp/seg_${name}.jpg`);
 
   src.delete();
   small.delete();
