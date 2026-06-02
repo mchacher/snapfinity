@@ -2,6 +2,12 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Global layout (mockup A)
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 15 | **View switch in the header** | The Détourage / Aperçu 3D switch is a **segmented control in the header** (centred), not a tab bar above the right panel — it governs both panels, and it fills the otherwise-empty header centre. Chosen from 3 HTML mockups (see `mockups/`). The Détourage right side is a **full-bleed canvas** with a floating bar (status pills + "change photo"); the left panel stays contextual (decisions #14). Mockups rendered + reviewed with Playwright (kept as a dev-only screenshot tool). |
+
 ## 2026-06-02 — Détourage iteration scope
 
 | # | Topic | Decision |

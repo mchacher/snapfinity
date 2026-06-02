@@ -104,5 +104,5 @@ export function PhotoOverlay({
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
   }, [analysis, contour, offsetContour]);
 
-  return <canvas ref={ref} className="w-full rounded-lg" />;
+  return <canvas ref={ref} className="max-h-full max-w-full rounded-lg" />;
 }

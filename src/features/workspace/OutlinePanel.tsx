@@ -54,8 +54,8 @@ export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
 
   if (photo.status === 'ready' && photo.result) {
     return (
-      <div className="flex h-full flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="relative h-full">
+        <div className="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center gap-2">
           <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
             {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
           </Chip>
@@ -65,14 +65,16 @@ export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
             </Chip>
           )}
           <span className="flex-1" />
-          <button type="button" onClick={openPicker} className="text-xs text-accent-700 hover:underline">
+          <button
+            type="button"
+            onClick={openPicker}
+            className="rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur transition-colors hover:bg-white"
+          >
             {t('photo.replace')}
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3">
-          <div className="w-full max-w-3xl">
-            <PhotoOverlay analysis={photo.result} contour={contour} offsetContour={offsetContour} />
-          </div>
+        <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+          <PhotoOverlay analysis={photo.result} contour={contour} offsetContour={offsetContour} />
         </div>
         {hidden}
       </div>
