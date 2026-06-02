@@ -16,7 +16,7 @@
 - [x] Workspace/Header wiring (live preview + STL/STEP export)
 - [x] tests (43 total)
 - [x] headless WebGL screenshot confirms the live bin renders
-- [ ] PR + CI green
+- [x] PR + CI green (#10, merged)
 
 ## Test plan
 
