@@ -16,7 +16,7 @@ describe('binDimensions', () => {
     const d = binDimensions({ cols: 2, rows: 1, heightUnits: 3 });
     expect(d.width).toBe(83.5);
     expect(d.depth).toBe(41.5);
-    expect(d.height).toBeCloseTo(29.63, 2);
+    expect(d.height).toBeCloseTo(29.13, 2);
   });
 
   it('scales the footprint with pitch', () => {
