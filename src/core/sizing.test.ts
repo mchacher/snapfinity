@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HEIGHT_UNIT_MM, PITCH, gridFootprint, heightUnits, unitsForLength } from './sizing';
+import { HEIGHT_UNIT_MM, PITCH, footprintFromBBox, gridFootprint, heightUnits, unitsForLength } from './sizing';
 
 describe('constants', () => {
   it('exposes the Gridfinity constants', () => {
@@ -41,6 +41,27 @@ describe('unitsForLength', () => {
 describe('gridFootprint', () => {
   it('returns cols × rows for a bounding box', () => {
     expect(gridFootprint(130, 80, PITCH.standard)).toEqual({ cols: 4, rows: 2 });
+  });
+});
+
+describe('footprintFromBBox', () => {
+  it('converts a pixel bbox to a grid footprint via the scale', () => {
+    // 0.2 mm/px → 420px×210px ≈ 84mm×42mm → 2×1 at pitch 42
+    expect(footprintFromBBox({ w: 420, h: 210 }, 0.2, PITCH.standard)).toEqual({ cols: 2, rows: 1 });
+  });
+
+  it('rounds up via gridFootprint (ceil)', () => {
+    // 421px×0.2 = 84.2mm → 3 cols
+    expect(footprintFromBBox({ w: 421, h: 210 }, 0.2, PITCH.standard)).toEqual({ cols: 3, rows: 1 });
+  });
+
+  it('returns null when there is no scale', () => {
+    expect(footprintFromBBox({ w: 420, h: 210 }, null, PITCH.standard)).toBeNull();
+    expect(footprintFromBBox({ w: 420, h: 210 }, 0, PITCH.standard)).toBeNull();
+  });
+
+  it('returns null for an empty bbox', () => {
+    expect(footprintFromBBox({ w: 0, h: 0 }, 0.2, PITCH.standard)).toBeNull();
   });
 });
 

@@ -1,4 +1,5 @@
 import { assertNonNegative, assertPositive } from './guards';
+import { pxToMm } from './calibration';
 
 /** Gridfinity height increment, in mm. */
 export const HEIGHT_UNIT_MM = 7;
@@ -24,6 +25,21 @@ export function gridFootprint(widthMm: number, depthMm: number, pitchMm: number)
     cols: unitsForLength(widthMm, pitchMm),
     rows: unitsForLength(depthMm, pitchMm),
   };
+}
+
+/**
+ * Grid footprint for an object's pixel bounding box, given the calibration scale.
+ * Returns `null` when there is no usable scale or the box is empty (so the UI keeps the
+ * previous size instead of snapping to a bogus 0×0).
+ */
+export function footprintFromBBox(
+  bboxPx: { w: number; h: number },
+  scaleMmPerPx: number | null,
+  pitchMm: number,
+): GridFootprint | null {
+  if (scaleMmPerPx === null || scaleMmPerPx <= 0) return null;
+  if (bboxPx.w <= 0 || bboxPx.h <= 0) return null;
+  return gridFootprint(pxToMm(bboxPx.w, scaleMmPerPx), pxToMm(bboxPx.h, scaleMmPerPx), pitchMm);
 }
 
 /** Number of 7 mm height units a depth needs (ceil, minimum 1). */

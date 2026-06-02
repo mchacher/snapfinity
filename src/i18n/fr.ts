@@ -5,8 +5,17 @@ export const fr: Dict = {
   photo: {
     title: 'Photo',
     drop: 'Dépose une photo (objet + token)',
+    hint: 'Un fond clair et uni donne les meilleurs résultats',
+    analyzing: 'Analyse…',
+    error: "Échec de l'analyse",
+    retry: 'Essaie une autre photo',
     token: 'Token',
+    tokenFound: 'détecté',
+    tokenMissing: 'introuvable',
+    tokenOd: 'Ø token',
     scale: 'Échelle',
+    object: 'Objet',
+    replace: 'Changer de photo',
     contour: 'Contour',
   },
   params: {

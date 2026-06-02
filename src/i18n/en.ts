@@ -3,8 +3,17 @@ export const en = {
   photo: {
     title: 'Photo',
     drop: 'Drop a photo (object + token)',
+    hint: 'Plain light background works best',
+    analyzing: 'Analyzing…',
+    error: 'Analysis failed',
+    retry: 'Try another photo',
     token: 'Token',
+    tokenFound: 'detected',
+    tokenMissing: 'not found',
+    tokenOd: 'Token Ø',
     scale: 'Scale',
+    object: 'Object',
+    replace: 'Replace photo',
     contour: 'Contour',
   },
   params: {
