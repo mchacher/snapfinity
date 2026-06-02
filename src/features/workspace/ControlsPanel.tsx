@@ -141,12 +141,13 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
   return (
     <div>
       <Section title={t('params.sizeSection')}>
-        <Slider
+        <NumberField
           label={t('params.pitch')}
           value={params.pitchMm}
           onChange={(v) => set('pitchMm', v)}
           min={20}
           max={84}
+          step={1}
           unit="mm"
         />
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { OutlinePanel } from './OutlinePanel';
@@ -7,7 +7,10 @@ import { useBin } from './useBin';
 import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { useMaskEdit } from './useMaskEdit';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
-import { footprintFromBBox } from '../../core/sizing';
+import { gridForFootprint } from '../../core/sizing';
+import { smoothContour } from '../../core/contour';
+import { offsetPolygon } from '../../core/offset';
+import { contourToFootprintMm } from '../../core/footprint';
 
 export interface Params {
   pitchMm: number;
@@ -69,7 +72,6 @@ export function Workspace() {
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
-  const { geometry, shape, status } = useBin(params);
   const photo = usePhotoAnalysis({
     flatten: params.flattenStrength,
     brightness: params.brightness,
@@ -87,16 +89,45 @@ export function Workspace() {
   const tokenRadiusPx = photo.result?.token.found ? (photo.result.token.radiusPx ?? null) : null;
   const scaleMmPerPx = tokenRadiusPx ? params.tokenOdMm / (2 * tokenRadiusPx) : null;
 
-  // Auto-size: derive cols/rows from the (edited) object bbox × scale, unless the user took over.
+  // Contour pipeline (pure, live): smoothed outline → clearance offset (px for the overlay),
+  // then the mm footprint that hollows the bin. One source of truth, shared by the overlay
+  // (px) and the CAD pocket (mm).
+  const contour = useMemo(
+    () => (editedMask ? smoothContour(editedMask.outline, params.smoothingFactor) : []),
+    [editedMask, params.smoothingFactor],
+  );
+  const offsetContour = useMemo(() => {
+    if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
+    return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
+  }, [contour, scaleMmPerPx, params.offsetMm]);
+  const footprintMm = useMemo(() => {
+    const ring = offsetContour.length >= 3 ? offsetContour : contour;
+    if (!scaleMmPerPx || ring.length < 3) return null;
+    return contourToFootprintMm(ring, scaleMmPerPx);
+  }, [offsetContour, contour, scaleMmPerPx]);
+
+  // Build the bin only on the Preview tab (replicad is main-thread — don't freeze painting).
+  const { geometry, shape, status } = useBin(params, footprintMm, tab === 'preview');
+
+  // Auto-size: size the grid so the pocket (object + clearance, in mm) fits the bin's usable
+  // INTERIOR — not the hors-tout grid. Sized from the footprint bbox + the inner margin.
   useEffect(() => {
-    if (params.manualSize) return;
-    const bbox = editedMask?.objectBBoxPx;
-    if (!bbox) return;
-    const fp = footprintFromBBox(bbox, scaleMmPerPx, params.pitchMm);
+    if (params.manualSize || !footprintMm || footprintMm.length < 3) return;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of footprintMm) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const fp = gridForFootprint(maxX - minX, maxY - minY, params.pitchMm);
     if (fp && (fp.cols !== params.cols || fp.rows !== params.rows)) {
       setParams((p) => ({ ...p, cols: fp.cols, rows: fp.rows }));
     }
-  }, [editedMask, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
+  }, [footprintMm, params.manualSize, params.pitchMm, params.cols, params.rows]);
 
   const exportFile = (format: 'stl' | 'step') => {
     if (!shape) return;
@@ -122,6 +153,8 @@ export function Workspace() {
               params={params}
               photo={photo}
               derived={editedMask}
+              contour={contour}
+              offsetContour={offsetContour}
               scaleMmPerPx={scaleMmPerPx}
               onUpload={(file) => {
                 reset();

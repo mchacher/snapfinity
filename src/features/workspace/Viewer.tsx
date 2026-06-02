@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { Loader2 } from 'lucide-react';
 import type { BufferGeometry } from 'three';
+import { BusyOverlay } from '../../ui/BusyOverlay';
 import { useI18n } from '../../i18n';
 import type { BinStatus } from './useBin';
 
@@ -21,16 +21,10 @@ export function Viewer({ geometry, status }: { geometry: BufferGeometry | null; 
         <OrbitControls makeDefault enablePan target={[0, 12, 0]} />
       </Canvas>
 
-      {status !== 'ready' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
-          {status === 'loading' ? (
-            <>
-              <Loader2 className="animate-spin" size={28} />
-              <span className="text-sm">{t('viewer.loading')}</span>
-            </>
-          ) : (
-            <span className="text-sm text-amber-600">{t('viewer.error')}</span>
-          )}
+      {status === 'loading' && <BusyOverlay label={t('viewer.loading')} />}
+      {status === 'error' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm text-amber-600">{t('viewer.error')}</span>
         </div>
       )}
     </div>

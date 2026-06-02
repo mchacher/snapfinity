@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
+import { BusyOverlay } from '../../ui/BusyOverlay';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
-import { smoothContour } from '../../core/contour';
-import { offsetPolygon } from '../../core/offset';
 import { EDIT_ADD, EDIT_ERASE } from '../../vision/mask-edit';
 import type { DerivedMask } from '../../vision/analyze';
+import type { Point2D } from '../../core/offset';
 import type { Params } from './Workspace';
 import type { PhotoAnalysisState } from './usePhotoAnalysis';
 
@@ -14,6 +14,9 @@ interface Props {
   params: Params;
   photo: PhotoAnalysisState;
   derived: DerivedMask | null;
+  /** Smoothed contour + clearance offset (full-res px) — computed in Workspace, drawn here. */
+  contour: Point2D[];
+  offsetContour: Point2D[];
   scaleMmPerPx: number | null;
   onUpload: (file: File) => void;
   /** Paint a disc into the edit layer (mask-space) — value chosen from the brush mode. */
@@ -22,24 +25,22 @@ interface Props {
 
 /**
  * The "Outline" tab: the photo at a workable size with the detection/segmentation overlay
- * (mask tint, token circle, smoothed contour + clearance offset). The controls that shape it
- * (smoothing, clearance, token Ø) live in the contextual left panel; the mask brush lands here
- * in 014.
+ * (mask tint, token circle, smoothed contour + clearance offset) + the mask brush. The contour
+ * is computed in Workspace (shared with the CAD pocket); the controls live in the left panel.
  */
-export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload, onPaint }: Props) {
+export function OutlinePanel({
+  params,
+  photo,
+  derived,
+  contour,
+  offsetContour,
+  scaleMmPerPx,
+  onUpload,
+  onPaint,
+}: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
-
-  // Smoothed outline + clearance offset — pure, recomputed live as the sliders move.
-  const contour = useMemo(
-    () => (derived ? smoothContour(derived.outline, params.smoothingFactor) : []),
-    [derived, params.smoothingFactor],
-  );
-  const offsetContour = useMemo(() => {
-    if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
-    return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
-  }, [contour, scaleMmPerPx, params.offsetMm]);
 
   const openPicker = () => inputRef.current?.click();
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -68,12 +69,6 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload, o
               {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
             </Chip>
           )}
-          {photo.status === 'analyzing' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm backdrop-blur">
-              <Loader2 size={12} className="animate-spin" />
-              {t('photo.analyzing')}
-            </span>
-          )}
           <span className="flex-1" />
           <button
             type="button"
@@ -98,6 +93,7 @@ export function OutlinePanel({ params, photo, derived, scaleMmPerPx, onUpload, o
             brushErase={params.brushMode === 'erase'}
           />
         </div>
+        {photo.status === 'analyzing' && <BusyOverlay label={t('photo.analyzing')} />}
         {hidden}
       </div>
     );

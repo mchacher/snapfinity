@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { HEIGHT_UNIT_MM, PITCH, footprintFromBBox, gridFootprint, heightUnits, unitsForLength } from './sizing';
+import {
+  BIN_INNER_MARGIN_MM,
+  HEIGHT_UNIT_MM,
+  PITCH,
+  gridForFootprint,
+  gridFootprint,
+  heightUnits,
+  unitsForLength,
+} from './sizing';
 
 describe('constants', () => {
   it('exposes the Gridfinity constants', () => {
@@ -44,24 +52,20 @@ describe('gridFootprint', () => {
   });
 });
 
-describe('footprintFromBBox', () => {
-  it('converts a pixel bbox to a grid footprint via the scale', () => {
-    // 0.2 mm/px → 420px×210px ≈ 84mm×42mm → 2×1 at pitch 42
-    expect(footprintFromBBox({ w: 420, h: 210 }, 0.2, PITCH.standard)).toEqual({ cols: 2, rows: 1 });
+describe('gridForFootprint', () => {
+  it('sizes for the interior: a pocket just under the pitch still needs the inner margin', () => {
+    // 80 mm pocket + 2.9 margin = 82.9 → fits 2 cols (84-0.5 outer); a bare 80/42 would say 2 too,
+    // but 82mm: 82+2.9=84.9 > 84 → bumps to 3, where bare 82/42 = 2 (the bug we fix).
+    expect(gridForFootprint(82, 30, PITCH.standard)).toEqual({ cols: 3, rows: 1 });
+    expect(gridFootprint(82, 30, PITCH.standard)).toEqual({ cols: 2, rows: 1 }); // old (hors-tout) under-sizes
   });
 
-  it('rounds up via gridFootprint (ceil)', () => {
-    // 421px×0.2 = 84.2mm → 3 cols
-    expect(footprintFromBBox({ w: 421, h: 210 }, 0.2, PITCH.standard)).toEqual({ cols: 3, rows: 1 });
+  it('exposes a sensible inner margin (gap + 2 walls)', () => {
+    expect(BIN_INNER_MARGIN_MM).toBeCloseTo(2.9, 9);
   });
 
-  it('returns null when there is no scale', () => {
-    expect(footprintFromBBox({ w: 420, h: 210 }, null, PITCH.standard)).toBeNull();
-    expect(footprintFromBBox({ w: 420, h: 210 }, 0, PITCH.standard)).toBeNull();
-  });
-
-  it('returns null for an empty bbox', () => {
-    expect(footprintFromBBox({ w: 0, h: 0 }, 0.2, PITCH.standard)).toBeNull();
+  it('returns null for an empty footprint', () => {
+    expect(gridForFootprint(0, 0, PITCH.standard)).toBeNull();
   });
 });
 
