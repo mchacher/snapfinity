@@ -31,7 +31,12 @@ export const en = {
     threemf: '3MF',
     hint: 'Live preview & export coming next.',
   },
-  viewer: { placeholder: '3D preview', hint: 'Your bin will appear here' },
+  viewer: {
+    placeholder: '3D preview',
+    hint: 'Your bin will appear here',
+    loading: 'Generating…',
+    error: 'Render failed',
+  },
 };
 
 export type Dict = typeof en;
