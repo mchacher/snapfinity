@@ -44,18 +44,29 @@ measurable test case (IoU), not an eyeball check.
 
 ## Contour extraction (next iteration)
 
-Bridges segmentation (it 7) → pocket (it 3 CAD). The mask is binary at pixel resolution, so
-its raw contour is jagged → a pixelated pocket. This iteration turns the mask into a clean,
-**user-tunable** contour:
+Bridges segmentation (it 8a, spec 012) → pocket (it 3 CAD). The mask is binary at pixel
+resolution, so its raw contour is jagged → a pixelated pocket. And on hard cases (chrome on
+white, etc.) the auto mask is simply wrong. This iteration makes the **mask the editable
+layer** and derives a clean, **user-tunable** contour from it — all live:
+
+```
+auto mask ──(brush add/erase)──▶ corrected mask ──(smoothing)──▶ contour ──(clearance)──▶ offset contour
+                                          └────────────── overlay redraws in real time ─────────────┘
+```
 
 - **Smoothing / tolerance slider** — less pixelation, rounder corners. Likely mask
   blur + re-threshold and/or `approxPolyDP` + chaikin/spline resample; one knob from
   "faithful" to "smooth".
 - **Clearance slider** — the offset already decided (default 1.0 mm).
-- **Live visual feedback** — the contour overlay on the photo redraws in **real time** as
-  the sliders move, *before* generating the 3D pocket. This is the core UX requirement: the
-  tool is an interactive visual adjuster, not a one-shot pipeline.
-- Scope target: **white/light background** (see decisions #11).
+- **Brush paint / erase** — let the user **correct the mask** directly: fill zones the model
+  missed (the chrome-fork failure), erase stray blobs the cleanup kept. Turns the tool from
+  auto-only into auto + manual fix — the key to usability on real photos. Paint on the binary
+  mask at full res; the contour re-derives from the edited mask. Add/erase modes + brush size.
+- **Live visual feedback** — the contour overlay on the photo redraws in **real time** as the
+  sliders move and the user paints, *before* generating the 3D pocket. The core UX: an
+  interactive visual adjuster, not a one-shot pipeline.
+- Scope target: **white/light background** (decisions #11); the brush is what rescues the
+  non-white / glossy cases.
 
 ## Notes
 
