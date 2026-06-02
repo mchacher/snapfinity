@@ -2,6 +2,13 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
+## 2026-06-02 — Détourage iteration scope
+
+| # | Topic | Decision |
+| - | ----- | -------- |
+| 13 | **Interior holes** | The contour is the **outer outline only** for now (`RETR_EXTERNAL`, largest area); interior holes (scissors/wrench rings) are **filled** in the pocket. Simpler + robust to false holes from segmentation; islands/pillars come later. |
+| 14 | **Détourage split + controls** | Split the work: **013** = contour + smoothing slider + clearance slider + live 2D overlay; **014** = mask **brush** (paint/erase). Contour controls live **in the Outline tab** for now; making the **left panel tab-contextual** (Outline → contour tools, 3D → bin params) is a later UX iteration. |
+
 ## 2026-06-02 — Vision quality scope + live contour adjustment
 
 | # | Topic | Decision |

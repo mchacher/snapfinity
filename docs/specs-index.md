@@ -16,7 +16,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 009 | [preview-export](../specs/009-preview-export/) | ✅ Done | Live three.js preview (replicad in-browser) + STL/STEP export. Iteration 4 (part 2). |
 | 010 | [token-detection](../specs/010-token-detection/) | ✅ Done | Token detection + calibration (opencv.js matchShapes); 36/36 on the dataset. Iteration 6. |
 | 011 | [segmentation](../specs/011-segmentation/) | ✅ Done | Object matting (u2netp ONNX) + token exclusion → tool silhouette. Iteration 7. |
-| 012 | [browser-vision](../specs/012-browser-vision/) | In review | Vision in the browser: photo upload → token + u2netp mask, **live overlay** + auto-size. onnxruntime-web, shared `cleanMask`. Iteration 8 (part 1). |
+| 012 | [browser-vision](../specs/012-browser-vision/) | ✅ Done | Vision in the browser: photo upload → token + u2netp mask, **live overlay** + auto-size. onnxruntime-web, shared `cleanMask`, 2-tab layout. Iteration 8 (part 1). |
+| 013 | [contour](../specs/013-contour/) | Draft | Outer contour from the mask + live **smoothing** & **clearance** sliders (pure `simplify`/`chaikin`/`offset`), drawn over the photo. Iteration 8 (part 2). |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

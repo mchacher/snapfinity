@@ -30,6 +30,7 @@ export const fr: Dict = {
     height: 'Hauteur',
     thickness: 'Épaisseur outil',
     offset: 'Jeu',
+    smoothing: 'Lissage',
     lip: "Lèvre d'empilage",
     units: 'unités',
     dimensions: 'Dimensions',

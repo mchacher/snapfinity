@@ -18,7 +18,10 @@ export interface Params {
   manualSize: boolean;
   heightUnits: number;
   thicknessMm: number;
+  /** Printing clearance added around the contour (mm). */
   offsetMm: number;
+  /** Contour smoothing knob, 0 (faithful) … 1 (smooth). */
+  smoothingFactor: number;
   includeLip: boolean;
   /** Calibration token outer diameter (mm) — measure the printed token for best accuracy. */
   tokenOdMm: number;
@@ -32,6 +35,7 @@ const initialParams: Params = {
   heightUnits: 3,
   thicknessMm: 18,
   offsetMm: 1,
+  smoothingFactor: 0.3,
   includeLip: true,
   tokenOdMm: 76.2,
 };

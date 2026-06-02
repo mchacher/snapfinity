@@ -86,15 +86,6 @@ export function ControlsPanel({ params, set }: Props) {
           min={1}
           step={0.5}
         />
-        <Slider
-          label={t('params.offset')}
-          value={params.offsetMm}
-          onChange={(v) => set('offsetMm', v)}
-          min={0}
-          max={3}
-          step={0.1}
-          unit="mm"
-        />
         <Toggle label={t('params.lip')} checked={params.includeLip} onChange={(v) => set('includeLip', v)} />
       </Section>
     </div>

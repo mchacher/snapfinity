@@ -28,6 +28,7 @@ export const en = {
     height: 'Height',
     thickness: 'Tool thickness',
     offset: 'Clearance',
+    smoothing: 'Smoothing',
     lip: 'Stacking lip',
     units: 'units',
     dimensions: 'Dimensions',

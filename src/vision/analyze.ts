@@ -5,7 +5,9 @@ import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, saliencyToMask } from './segment';
 import { runSaliency } from './seg-runtime';
 import { cleanMask } from './isolate';
+import { outerContour } from './contour-cv';
 import { maskBBox, type BBox, type TokenCircle } from './mask';
+import type { Point2D } from '../core/offset';
 
 export interface PhotoAnalysis {
   /** Full-resolution photo pixels (so the overlay draws without re-decoding). */
@@ -18,6 +20,8 @@ export interface PhotoAnalysis {
   /** Full-resolution binary mask of the isolated tool (0 / 255). */
   mask: { data: Uint8Array; width: number; height: number };
   objectBBoxPx: BBox | null;
+  /** Outer contour of the tool (full-res px); `[]` when no object. */
+  outline: Point2D[];
 }
 
 export interface AnalyzeOptions {
@@ -65,6 +69,7 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
   cv.resize(maskSmall, maskFull, new cv.Size(width, height), 0, 0, cv.INTER_NEAREST);
   cleanMask(maskFull, tokenCircle);
   const maskData = new Uint8Array(maskFull.data);
+  const outline = outerContour(maskFull); // may mutate maskFull — we're done reading it
   maskSmall.delete();
   maskFull.delete();
 
@@ -80,5 +85,6 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
       : { found: false },
     mask: { data: maskData, width, height },
     objectBBoxPx,
+    outline,
   };
 }

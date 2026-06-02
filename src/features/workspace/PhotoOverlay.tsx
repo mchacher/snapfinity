@@ -1,15 +1,47 @@
 import { useEffect, useRef } from 'react';
 import type { PhotoAnalysis } from '../../vision/analyze';
+import type { Point2D } from '../../core/offset';
 
 /** Cap the rendered canvas so a 12 MP phone photo doesn't allocate a huge surface. */
 const MAX_SIDE = 1024;
+
+/** Stroke a closed ring of full-res points, scaled to the canvas. */
+function drawRing(
+  ctx: CanvasRenderingContext2D,
+  ring: Point2D[],
+  scale: number,
+  stroke: string,
+  width: number,
+  dash: number[] = [],
+) {
+  if (ring.length < 2) return;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(ring[0][0] * scale, ring[0][1] * scale);
+  for (let i = 1; i < ring.length; i += 1) ctx.lineTo(ring[i][0] * scale, ring[i][1] * scale);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
 
 /**
  * Draw the analysed photo with the vision overlay: green tint on the isolated tool mask,
  * a cyan token circle, and the object's bounding box — the in-app equivalent of the
  * `verify:seg` overlays, so detection + segmentation can be validated visually.
  */
-export function PhotoOverlay({ analysis }: { analysis: PhotoAnalysis }) {
+export function PhotoOverlay({
+  analysis,
+  contour = [],
+  offsetContour = [],
+}: {
+  analysis: PhotoAnalysis;
+  /** Smoothed outline (full-res px) — drawn solid. */
+  contour?: Point2D[];
+  /** Clearance-offset outline (full-res px) — drawn dashed (the pocket). */
+  offsetContour?: Point2D[];
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -58,15 +90,19 @@ export function PhotoOverlay({ analysis }: { analysis: PhotoAnalysis }) {
       ctx.stroke();
     }
 
-    // object bounding box
-    if (objectBBoxPx) {
+    // object bounding box — only until a contour is shown (then it'd be clutter)
+    if (objectBBoxPx && contour.length === 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.85)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 4]);
       ctx.strokeRect(objectBBoxPx.x * scale, objectBBoxPx.y * scale, objectBBoxPx.w * scale, objectBBoxPx.h * scale);
       ctx.setLineDash([]);
     }
-  }, [analysis]);
+
+    // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
+    drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
+    drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
+  }, [analysis, contour, offsetContour]);
 
   return <canvas ref={ref} className="w-full rounded-lg" />;
 }

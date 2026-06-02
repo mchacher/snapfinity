@@ -1,9 +1,12 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
 import { NumberField } from '../../ui/NumberField';
+import { Slider } from '../../ui/Slider';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
+import { smoothContour } from '../../core/contour';
+import { offsetPolygon } from '../../core/offset';
 import type { Params } from './Workspace';
 import type { PhotoAnalysisState } from './usePhotoAnalysis';
 
@@ -23,6 +26,17 @@ export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Pro
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+
+  const result = photo.result;
+  // Smoothed outline + clearance offset — pure, recomputed live as the sliders move.
+  const contour = useMemo(
+    () => (result ? smoothContour(result.outline, params.smoothingFactor) : []),
+    [result, params.smoothingFactor],
+  );
+  const offsetContour = useMemo(() => {
+    if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
+    return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
+  }, [contour, scaleMmPerPx, params.offsetMm]);
 
   const openPicker = () => inputRef.current?.click();
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -66,9 +80,28 @@ export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Pro
             {t('photo.replace')}
           </button>
         </div>
+        <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+          <Slider
+            label={t('params.smoothing')}
+            value={params.smoothingFactor}
+            onChange={(v) => set('smoothingFactor', v)}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+          <Slider
+            label={t('params.offset')}
+            value={params.offsetMm}
+            onChange={(v) => set('offsetMm', v)}
+            min={0}
+            max={3}
+            step={0.1}
+            unit="mm"
+          />
+        </div>
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3">
           <div className="w-full max-w-3xl">
-            <PhotoOverlay analysis={photo.result} />
+            <PhotoOverlay analysis={photo.result} contour={contour} offsetContour={offsetContour} />
           </div>
         </div>
         {hidden}
