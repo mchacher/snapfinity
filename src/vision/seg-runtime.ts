@@ -1,19 +1,24 @@
-import * as ort from 'onnxruntime-web';
+import * as ort from 'onnxruntime-web/webgpu';
 import { SEG_SIZE, rgbaToTensor } from './segment';
+import { pickExecutionProviders } from './providers';
 
 let sessionPromise: Promise<ort.InferenceSession> | null = null;
 
 /**
  * Lazily create the u2netp session (onnxruntime-web). The model is self-hosted under
  * `public/models/` and the WASM runtime under `/ort/` (copied by vite-plugin-static-copy) so
- * everything works offline. `numThreads = 1` keeps inference on the main thread, which avoids
+ * everything works offline. The WebGPU backend reuses the same JSEP WASM glue, so `wasmPaths`
+ * still points here. `numThreads = 1` keeps the WASM fallback single-threaded, which avoids
  * needing cross-origin isolation (COOP/COEP) that static hosts usually don't set.
  */
 function getSession(): Promise<ort.InferenceSession> {
   if (!sessionPromise) {
     ort.env.wasm.wasmPaths = `${import.meta.env.BASE_URL}ort/`;
     ort.env.wasm.numThreads = 1;
-    sessionPromise = ort.InferenceSession.create(`${import.meta.env.BASE_URL}models/u2netp.onnx`);
+    const hasWebGpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
+    sessionPromise = ort.InferenceSession.create(`${import.meta.env.BASE_URL}models/u2netp.onnx`, {
+      executionProviders: pickExecutionProviders(hasWebGpu),
+    });
   }
   return sessionPromise;
 }

@@ -1,5 +1,6 @@
 import { draw, type Shape3D, type Sketch } from 'replicad';
 import { HEIGHT_UNIT_MM } from '../core/sizing';
+import { simplifyFootprintMm } from '../core/footprint';
 import { makeBin, type BinParams } from './bin';
 import type { Point2D } from '../core/offset';
 
@@ -35,9 +36,13 @@ export function makeBinWithPocket(
 
   const bin = makeBin({ ...params, hollow: false });
 
-  let pen = draw(footprint[0]);
-  for (let i = 1; i < footprint.length; i++) {
-    pen = pen.lineTo(footprint[i]);
+  // Decimate the ring before tracing it: the contour reaches here with hundreds of
+  // near-collinear points (clipper offset + Chaikin), each an extra edge the boolean must
+  // process. Dropping sub-print-resolution points keeps the shape but cuts the edge count.
+  const ring = simplifyFootprintMm(footprint);
+  let pen = draw(ring[0]);
+  for (let i = 1; i < ring.length; i++) {
+    pen = pen.lineTo(ring[i]);
   }
   const pocket = (pen.close().sketchOnPlane('XY', topZ) as Sketch).extrude(-depthMm) as Shape3D;
 

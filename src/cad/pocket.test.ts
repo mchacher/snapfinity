@@ -15,6 +15,14 @@ const centredSquare = (half: number): Point2D[] => [
   [-half, half],
 ];
 
+/** A dense polygon approximation of a circle — the kind of high-point-count ring the
+ *  clipper offset + Chaikin smoothing produce, which the pocket builder decimates. */
+const denseCircle = (radius: number, n: number): Point2D[] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (2 * Math.PI * i) / n;
+    return [radius * Math.cos(a), radius * Math.sin(a)] as Point2D;
+  });
+
 function bboxOf(shape: { boundingBox: { bounds: [number[], number[]] } }) {
   const [min, max] = shape.boundingBox.bounds;
   return { width: max[0] - min[0], depth: max[1] - min[1], height: max[2] - min[2] };
@@ -36,6 +44,14 @@ describe('makeBinWithPocket', () => {
       await makeBinWithPocket(params, centredSquare(15)).blobSTL().arrayBuffer()
     ).byteLength;
     expect(pocketed).toBeGreaterThan(1000);
+  });
+
+  it('keeps the outer dimensions with a dense (decimated) footprint', () => {
+    const expected = binDimensions(params);
+    const dims = bboxOf(makeBinWithPocket(params, denseCircle(15, 200)));
+    expect(dims.width).toBeCloseTo(expected.width, 1);
+    expect(dims.depth).toBeCloseTo(expected.depth, 1);
+    expect(dims.height).toBeCloseTo(expected.height, 1);
   });
 
   it('rejects a degenerate footprint or non-positive depth', () => {
