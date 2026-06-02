@@ -77,7 +77,7 @@ export function Workspace() {
       <Header onExport={exportFile} canExport={status === 'ready'} />
       <main className="grid flex-1 overflow-hidden lg:grid-cols-[340px_1fr]">
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
-          <ControlsPanel params={params} set={set} />
+          <ControlsPanel params={params} set={set} tab={tab} />
         </aside>
         <section className="flex min-h-0 flex-col p-4">
           <Tabs
@@ -92,7 +92,6 @@ export function Workspace() {
             <div className={tab === 'outline' ? 'h-full' : 'hidden'}>
               <OutlinePanel
                 params={params}
-                set={set}
                 photo={photo}
                 scaleMmPerPx={scaleMmPerPx}
                 onUpload={(file) => photo.analyze(file, params.tokenOdMm)}

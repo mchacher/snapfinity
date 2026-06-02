@@ -44,7 +44,9 @@ the auto mask) is the next iteration (014); feeding the offset contour into the 
 - **R4 — Live overlay.** `PhotoOverlay` draws the smoothed contour + the offset contour;
   the Outline view recomputes both from `outline` + sliders on each change (real-time).
 - **R5 — Controls.** Smoothing slider (new `params.smoothingFactor`, 0..1) + clearance slider
-  (existing `params.offsetMm`) in the Outline tab.
+  (existing `params.offsetMm`) + token-Ø field in the **contextual left panel** when the
+  Outline tab is active. On the 3D tab the left panel shows the **bin parameters** (size,
+  height, thickness, lip). The Outline tab's right side stays a clean photo + overlay + pills.
 
 ## Acceptance criteria
 

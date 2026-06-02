@@ -8,6 +8,7 @@ export const en = {
     analyzing: 'Analyzing…',
     error: 'Analysis failed',
     retry: 'Try another photo',
+    calibration: 'Calibration',
     token: 'Token',
     tokenFound: 'detected',
     tokenMissing: 'not found',

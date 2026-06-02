@@ -10,6 +10,7 @@ export const fr: Dict = {
     analyzing: 'Analyse…',
     error: "Échec de l'analyse",
     retry: 'Essaie une autre photo',
+    calibration: 'Calibration',
     token: 'Token',
     tokenFound: 'détecté',
     tokenMissing: 'introuvable',

@@ -1,8 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
-import { NumberField } from '../../ui/NumberField';
-import { Slider } from '../../ui/Slider';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
 import { smoothContour } from '../../core/contour';
@@ -12,17 +10,18 @@ import type { PhotoAnalysisState } from './usePhotoAnalysis';
 
 interface Props {
   params: Params;
-  set: <K extends keyof Params>(key: K, value: Params[K]) => void;
   photo: PhotoAnalysisState;
   scaleMmPerPx: number | null;
   onUpload: (file: File) => void;
 }
 
 /**
- * The "Outline" tab: the photo at a workable size with the detection/segmentation overlay.
- * Home for the live contour sliders + mask brush coming in spec 013.
+ * The "Outline" tab: the photo at a workable size with the detection/segmentation overlay
+ * (mask tint, token circle, smoothed contour + clearance offset). The controls that shape it
+ * (smoothing, clearance, token Ø) live in the contextual left panel; the mask brush lands here
+ * in 014.
  */
-export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Props) {
+export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -66,38 +65,9 @@ export function OutlinePanel({ params, set, photo, scaleMmPerPx, onUpload }: Pro
             </Chip>
           )}
           <span className="flex-1" />
-          <div className="w-40">
-            <NumberField
-              label={t('photo.tokenOd')}
-              value={params.tokenOdMm}
-              onChange={(v) => set('tokenOdMm', v)}
-              unit="mm"
-              min={1}
-              step={0.1}
-            />
-          </div>
           <button type="button" onClick={openPicker} className="text-xs text-accent-700 hover:underline">
             {t('photo.replace')}
           </button>
-        </div>
-        <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-          <Slider
-            label={t('params.smoothing')}
-            value={params.smoothingFactor}
-            onChange={(v) => set('smoothingFactor', v)}
-            min={0}
-            max={1}
-            step={0.05}
-          />
-          <Slider
-            label={t('params.offset')}
-            value={params.offsetMm}
-            onChange={(v) => set('offsetMm', v)}
-            min={0}
-            max={3}
-            step={0.1}
-            unit="mm"
-          />
         </div>
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3">
           <div className="w-full max-w-3xl">
