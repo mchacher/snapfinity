@@ -20,6 +20,10 @@ export interface Params {
   offsetMm: number;
   /** Contour smoothing knob, 0 (faithful) … 1 (smooth). */
   smoothingFactor: number;
+  /** Show the green segmentation tint over the photo. */
+  showMask: boolean;
+  /** Green tint strength when shown, 0 … 1. */
+  maskOpacity: number;
   includeLip: boolean;
   /** Calibration token outer diameter (mm) — measure the printed token for best accuracy. */
   tokenOdMm: number;
@@ -34,6 +38,8 @@ const initialParams: Params = {
   thicknessMm: 18,
   offsetMm: 1,
   smoothingFactor: 0.3,
+  showMask: true,
+  maskOpacity: 0.45,
   includeLip: true,
   tokenOdMm: 76.2,
 };

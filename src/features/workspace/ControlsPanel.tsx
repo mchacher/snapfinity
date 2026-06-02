@@ -23,6 +23,29 @@ export function ControlsPanel({ params, set, tab }: Props) {
   if (tab === 'outline') {
     return (
       <div>
+        <Section title={t('photo.calibration')}>
+          <NumberField
+            label={t('photo.tokenOd')}
+            value={params.tokenOdMm}
+            onChange={(v) => set('tokenOdMm', v)}
+            unit="mm"
+            min={1}
+            step={0.1}
+          />
+        </Section>
+        <Section title={t('params.display')}>
+          <Toggle label={t('params.maskShow')} checked={params.showMask} onChange={(v) => set('showMask', v)} />
+          {params.showMask && (
+            <Slider
+              label={t('params.opacity')}
+              value={params.maskOpacity}
+              onChange={(v) => set('maskOpacity', v)}
+              min={0}
+              max={1}
+              step={0.05}
+            />
+          )}
+        </Section>
         <Section title={t('tabs.outline')}>
           <Slider
             label={t('params.smoothing')}
@@ -40,16 +63,6 @@ export function ControlsPanel({ params, set, tab }: Props) {
             max={3}
             step={0.1}
             unit="mm"
-          />
-        </Section>
-        <Section title={t('photo.calibration')}>
-          <NumberField
-            label={t('photo.tokenOd')}
-            value={params.tokenOdMm}
-            onChange={(v) => set('tokenOdMm', v)}
-            unit="mm"
-            min={1}
-            step={0.1}
           />
         </Section>
       </div>

@@ -74,7 +74,12 @@ export function OutlinePanel({ params, photo, scaleMmPerPx, onUpload }: Props) {
           </button>
         </div>
         <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-          <PhotoOverlay analysis={photo.result} contour={contour} offsetContour={offsetContour} />
+          <PhotoOverlay
+            analysis={photo.result}
+            contour={contour}
+            offsetContour={offsetContour}
+            maskOpacity={params.showMask ? params.maskOpacity : 0}
+          />
         </div>
         {hidden}
       </div>
