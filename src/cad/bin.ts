@@ -31,14 +31,15 @@ const CLEARANCE = 0.5;
 const AXIS_CLEARANCE = (CLEARANCE * Math.sqrt(2)) / 4;
 const CORNER_RADIUS = 4;
 const TOP_FILLET = 0.6;
-const SOCKET_HEIGHT = 5;
+// Standard Gridfinity foot profile (spec): 0.8 + 1.8 + 2.15 = 4.75 mm.
+const SOCKET_HEIGHT = 4.75;
 const SOCKET_SMALL_TAPER = 0.8;
-const SOCKET_BIG_TAPER = 2.4;
+const SOCKET_BIG_TAPER = 2.15;
 const SOCKET_VERTICAL_PART = SOCKET_HEIGHT - SOCKET_SMALL_TAPER - SOCKET_BIG_TAPER;
 const SOCKET_TAPER_WIDTH = SOCKET_SMALL_TAPER + SOCKET_BIG_TAPER;
 const WALL = 1.2;
 /** Height the swept top profile adds above the box body (measured; pitch/lip independent). */
-const TOP_RISE = 3.63;
+const TOP_RISE = 3.38;
 
 export interface BinParams {
   cols: number;

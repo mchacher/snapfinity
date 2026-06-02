@@ -4,6 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { initOpenCascadeForNode } from '../../src/cad/oc-node';
 import { makeBin, type BinParams } from '../../src/cad/bin';
+import { shapeToStl } from '../../src/cad/export';
 
 await initOpenCascadeForNode();
 
@@ -15,6 +16,6 @@ const samples: { name: string; params: BinParams }[] = [
 
 for (const { name, params } of samples) {
   const out = fileURLToPath(new URL(`../../out/${name}.stl`, import.meta.url));
-  writeFileSync(out, Buffer.from(await makeBin(params).blobSTL().arrayBuffer()));
+  writeFileSync(out, Buffer.from(await shapeToStl(makeBin(params)).arrayBuffer()));
   console.log('wrote', out);
 }
