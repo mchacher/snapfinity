@@ -92,6 +92,22 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
             max={1}
             step={0.05}
           />
+          <Toggle
+            label={t('params.straighten')}
+            checked={params.straightenEdges}
+            onChange={(v) => set('straightenEdges', v)}
+          />
+          {params.straightenEdges && (
+            <Slider
+              label={t('params.straightenTol')}
+              value={params.straightenToleranceDeg}
+              onChange={(v) => set('straightenToleranceDeg', v)}
+              min={1}
+              max={20}
+              step={1}
+              unit="°"
+            />
+          )}
           <Slider
             label={t('params.offset')}
             value={params.offsetMm}
