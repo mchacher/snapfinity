@@ -43,6 +43,8 @@ export interface Params {
   includeLip: boolean;
   /** Calibration token outer diameter (mm) — measure the printed token for best accuracy. */
   tokenOdMm: number;
+  /** Preview render opacity, 0.2…1 (1 = opaque). Lower it to see the pocket through the walls. */
+  renderOpacity: number;
 }
 
 const initialParams: Params = {
@@ -64,6 +66,7 @@ const initialParams: Params = {
   maskOpacity: 0.45,
   includeLip: true,
   tokenOdMm: 76.2,
+  renderOpacity: 1,
 };
 
 export function Workspace() {
@@ -164,7 +167,7 @@ export function Workspace() {
             />
           </div>
           <div className={tab === 'preview' ? 'h-full' : 'hidden'}>
-            <Viewer geometry={geometry} status={status} />
+            <Viewer geometry={geometry} status={status} opacity={params.renderOpacity} />
           </div>
         </section>
       </main>

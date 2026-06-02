@@ -50,6 +50,7 @@ export const fr: Dict = {
     dimensions: 'Dimensions',
     sizeSection: 'Taille',
     general: 'Général',
+    render: 'Rendu',
   },
   export: {
     title: 'Export',
