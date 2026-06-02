@@ -37,6 +37,7 @@ export const fr: Dict = {
     maskShow: 'Masque vert',
     opacity: 'Opacité',
     image: 'Image',
+    flatten: 'Aplatir le fond',
     brightness: 'Luminosité',
     contrast: 'Contraste',
     lip: "Lèvre d'empilage",

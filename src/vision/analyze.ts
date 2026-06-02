@@ -3,6 +3,7 @@ import type { Mat } from './cv';
 import { loadPhoto } from './image-source';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
+import { flattenRgba } from './flatten';
 import { runSaliency } from './seg-runtime';
 import { cleanMask } from './isolate';
 import { outerContour } from './contour-cv';
@@ -32,6 +33,8 @@ export interface DerivedMask {
 
 export interface AnalyzeOptions {
   tokenOdMm?: number;
+  /** Pre-inference background flattening (divide-by-blur) — removes soft shadows on light bg. */
+  flatten?: boolean;
   /** Pre-inference brightness offset (washes light shadows toward white). */
   brightness?: number;
   /** Pre-inference contrast (classic factor formula). */
@@ -74,7 +77,7 @@ interface DecodeCache {
 let decodeCache: DecodeCache | null = null;
 
 export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Promise<PhotoAnalysis> {
-  const { tokenOdMm = TOKEN_OD_MM, brightness = 0, contrast = 0 } = options;
+  const { tokenOdMm = TOKEN_OD_MM, flatten = false, brightness = 0, contrast = 0 } = options;
 
   if (decodeCache?.file !== file) {
     const ref = await getRefContour();
@@ -87,10 +90,13 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
   }
   const c = decodeCache;
 
-  // Pre-process the model input only (tiny 320² buffer). The overlay applies the same
-  // brightness/contrast to the displayed photo at canvas resolution.
-  const adjusted = brightness !== 0 || contrast !== 0;
-  const saliency = await runSaliency(adjusted ? adjustRgba(c.seg320, brightness, contrast) : c.seg320);
+  // Pre-process the model input only (tiny 320² buffer): flatten the background to kill soft
+  // shadows, then the optional brightness/contrast. The displayed photo is left untouched
+  // (flatten would only wash it out); brightness/contrast are mirrored in the overlay.
+  let segInput: Uint8ClampedArray = c.seg320;
+  if (flatten) segInput = flattenRgba(segInput, SEG_SIZE);
+  if (brightness !== 0 || contrast !== 0) segInput = adjustRgba(segInput, brightness, contrast);
+  const saliency = await runSaliency(segInput);
 
   return {
     imageData: c.imageData,

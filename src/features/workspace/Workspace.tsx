@@ -20,6 +20,8 @@ export interface Params {
   offsetMm: number;
   /** Contour smoothing knob, 0 (faithful) … 1 (smooth). */
   smoothingFactor: number;
+  /** Pre-inference background flattening (divide-by-blur) — removes soft shadows. */
+  flattenBackground: boolean;
   /** Pre-inference image brightness (washes light shadows toward white). */
   brightness: number;
   /** Pre-inference image contrast. */
@@ -44,6 +46,7 @@ const initialParams: Params = {
   thicknessMm: 18,
   offsetMm: 1,
   smoothingFactor: 0.3,
+  flattenBackground: false,
   brightness: 0,
   contrast: 0,
   detectThreshold: 0.5,
@@ -60,7 +63,11 @@ export function Workspace() {
     setParams((prev) => ({ ...prev, [key]: value }));
 
   const { geometry, shape, status } = useBin(params);
-  const photo = usePhotoAnalysis({ brightness: params.brightness, contrast: params.contrast });
+  const photo = usePhotoAnalysis({
+    flatten: params.flattenBackground,
+    brightness: params.brightness,
+    contrast: params.contrast,
+  });
   const derived = useDerivedMask(photo.result, params.detectThreshold);
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so

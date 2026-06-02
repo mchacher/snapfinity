@@ -2,11 +2,12 @@
 
 Durable record of product/architecture decisions (ADR-lite). Newest first.
 
-## 2026-06-02 — Image pre-process (brightness/contrast)
+## 2026-06-02 — Image pre-process (flatten + brightness/contrast)
 
 | # | Topic | Decision |
 | - | ----- | -------- |
-| 17 | **Confidently-segmented shadows** | The threshold only drops *low-confidence* shadows; a cast shadow the model confidently includes (e.g. the cutter's right side) needs attacking **upstream**. Add **Luminosité + Contraste** sliders applied to the image **before u2netp** — washing light shadows on a white background toward white so the model stops segmenting them. Verified on the cutter. It changes the model input, so it **re-runs the inference** (debounced ~450 ms), unlike the live threshold. Pixel maths is the pure `adjustRgba`. **Memory:** the model input (320²) is adjusted in `analyze`; the *displayed* photo is adjusted in the overlay at canvas resolution (never the full-res buffer). A module-level **decode cache** keyed by file means a brightness change re-runs only adjust + inference, not the full-res decode — fixing a renderer crash from tripled peak memory. |
+| 18 | **Background flattening (anti-shadow)** | Global brightness/contrast proved too blunt to reliably remove shadows (you over-expose the object before the shadow whitens). Add **« Aplatir le fond »** — a divide-by-blur: a heavy Gaussian estimates the low-frequency background (illumination + soft shadows), and `image / background × 255` normalises the lit-but-shaded background toward white while the locally-darker object stays dark. The classic document-scan shadow remover; **automatic** (a toggle, no fiddling) and effective across photos. Verified on the cutter (right-side shadow bulge gone). Applied to the 320² model input only (cheap); the displayed photo is left as-is. Re-infers on toggle (debounced). If insufficient on hard cases → the brush (014). `flattenRgba` in `vision/flatten.ts`. |
+| 17 | **Confidently-segmented shadows** | The threshold only drops *low-confidence* shadows; a cast shadow the model confidently includes (e.g. the cutter's right side) needs attacking **upstream**. Add **Luminosité + Contraste** sliders applied to the image **before u2netp**. It changes the model input, so it **re-runs the inference** (debounced ~450 ms), unlike the live threshold. Pixel maths is the pure `adjustRgba`. **Memory:** the model input (320²) is adjusted in `analyze`; the *displayed* photo is adjusted in the overlay at canvas resolution (never the full-res buffer). A module-level **decode cache** keyed by file means an adjustment change re-runs only adjust + inference, not the full-res decode — fixing a renderer crash from tripled peak memory. (Superseded as the primary shadow tool by #18.) |
 
 ## 2026-06-02 — Detection threshold (shadow control)
 

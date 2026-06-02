@@ -35,6 +35,7 @@ export const en = {
     maskShow: 'Green mask',
     opacity: 'Opacity',
     image: 'Image',
+    flatten: 'Flatten background',
     brightness: 'Brightness',
     contrast: 'Contrast',
     lip: 'Stacking lip',

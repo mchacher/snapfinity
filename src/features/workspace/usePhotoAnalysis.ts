@@ -15,7 +15,15 @@ export interface PhotoAnalysisState {
  * it never lands in the entry chunk / blocks first paint. A new photo analyses immediately;
  * brightness/contrast changes re-run the inference **debounced** (they alter the model input).
  */
-export function usePhotoAnalysis({ brightness, contrast }: { brightness: number; contrast: number }): PhotoAnalysisState {
+export function usePhotoAnalysis({
+  flatten,
+  brightness,
+  contrast,
+}: {
+  flatten: boolean;
+  brightness: number;
+  contrast: number;
+}): PhotoAnalysisState {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<AnalysisStatus>('idle');
   const [result, setResult] = useState<PhotoAnalysis | null>(null);
@@ -36,7 +44,7 @@ export function usePhotoAnalysis({ brightness, contrast }: { brightness: number;
       void (async () => {
         try {
           const { analyzePhoto } = await import('../../vision/analyze');
-          const r = await analyzePhoto(file, { brightness, contrast });
+          const r = await analyzePhoto(file, { flatten, brightness, contrast });
           if (!cancelled) {
             setResult(r);
             setStatus('ready');
@@ -57,7 +65,7 @@ export function usePhotoAnalysis({ brightness, contrast }: { brightness: number;
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [file, brightness, contrast]);
+  }, [file, flatten, brightness, contrast]);
 
   return { status, result, setFile };
 }
