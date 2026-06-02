@@ -26,6 +26,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 019 | [pdf-plan](../specs/019-pdf-plan/) | In review | **Printable 1:1 top-view PDF** (pdf-lib): object outline (solid) + pocket (dashed) at true scale, 50 mm control ruler, print-at-100% header, A4 multi-page tiling. Header "Plan PDF" button, gated on a calibrated contour. Iteration 12. |
 | 020 | [grip-notches](../specs/020-grip-notches/) | In review | **Two-finger pinch grip** — a symmetric pair of vertical finger scoops at the object's edge (X/Y offsets); cut in the CAD worker (base bin cached for snappy moves). Iteration 13. |
 | 021 | [straighten-contour](../specs/021-straighten-contour/) | In review | **Straighten near-axis contour edges** — toggle + tolerance; snaps wobbly edges to the object's dominant axis (0°/90°), crisp corners (no rounding). Pure `core/contour` (`refineContour`/`rectifyStraightEdges`), flows into the pocket. Iteration 14. |
+| 022 | [publish-site](../specs/022-publish-site/) | In review | **Site publication** (host-agnostic): configurable Vite `base` (`BASE_PATH`), a **manual** GitHub Pages deploy workflow, README deploy docs (GH Pages + Cloudflare). Host choice deferred. Iteration 15. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
