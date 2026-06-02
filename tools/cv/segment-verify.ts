@@ -6,6 +6,7 @@ import * as ort from 'onnxruntime-node';
 import cv from '@techstark/opencv-js';
 import { loadOpenCv } from '../../src/vision/cv';
 import { detectToken, largestContour } from '../../src/vision/token';
+import { cleanMask } from '../../src/vision/isolate';
 import { grayFromJpegFile } from '../../src/vision/cv-image-node';
 import { SEG_SIZE, rgbaToTensor, saliencyToMask } from '../../src/vision/segment';
 
@@ -41,36 +42,12 @@ for (const photo of photos) {
   const mask = new cv.Mat();
   cv.resize(maskSmall, mask, new cv.Size(raw.width, raw.height), 0, 0, cv.INTER_NEAREST);
 
-  // exclude the token region (from detection) so only the TOOL remains
+  // isolate the tool: exclude the detected token region, then morph-open + keep largest blob
+  // (shared with the browser pipeline — src/vision/isolate.ts)
   const gray = grayFromJpegFile(photo);
   const tok = detectToken(gray, ref);
   gray.delete();
-  if (tok.found) {
-    cv.circle(mask, new cv.Point(tok.centerPx.x, tok.centerPx.y), Math.round(tok.radiusPx * 1.05), new cv.Scalar(0), -1);
-  }
-
-  // clean up: light morphological open, then keep only the largest blob (the tool)
-  const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
-  cv.morphologyEx(mask, mask, cv.MORPH_OPEN, kernel);
-  const labels = new cv.Mat();
-  const stats = new cv.Mat();
-  const centroids = new cv.Mat();
-  const ncomp = cv.connectedComponentsWithStats(mask, labels, stats, centroids, 8, cv.CV_32S);
-  let bestLabel = 0;
-  let bestArea = 0;
-  for (let l = 1; l < ncomp; l += 1) {
-    const a = stats.intAt(l, cv.CC_STAT_AREA);
-    if (a > bestArea) {
-      bestArea = a;
-      bestLabel = l;
-    }
-  }
-  const lab = labels.data32S;
-  for (let i = 0; i < mask.rows * mask.cols; i += 1) mask.data[i] = lab[i] === bestLabel ? 255 : 0;
-  kernel.delete();
-  labels.delete();
-  stats.delete();
-  centroids.delete();
+  cleanMask(mask, tok.found ? { centerPx: tok.centerPx, radiusPx: tok.radiusPx } : null);
 
   // overlay: green tint where mask, red token circle
   const overlay = Buffer.from(src.data);

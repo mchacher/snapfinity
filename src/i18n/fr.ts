@@ -2,11 +2,21 @@ import type { Dict } from './en';
 
 export const fr: Dict = {
   app: { tagline: 'Photo → bac Gridfinity' },
+  tabs: { outline: 'Détourage', preview: 'Aperçu 3D' },
   photo: {
     title: 'Photo',
     drop: 'Dépose une photo (objet + token)',
+    hint: 'Un fond clair et uni donne les meilleurs résultats',
+    analyzing: 'Analyse…',
+    error: "Échec de l'analyse",
+    retry: 'Essaie une autre photo',
     token: 'Token',
+    tokenFound: 'détecté',
+    tokenMissing: 'introuvable',
+    tokenOd: 'Ø token',
     scale: 'Échelle',
+    object: 'Objet',
+    replace: 'Changer de photo',
     contour: 'Contour',
   },
   params: {

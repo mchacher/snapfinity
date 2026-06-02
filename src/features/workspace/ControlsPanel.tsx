@@ -1,4 +1,3 @@
-import { ImageUp } from 'lucide-react';
 import { Section } from '../../ui/Section';
 import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
@@ -23,13 +22,6 @@ export function ControlsPanel({ params, set }: Props) {
 
   return (
     <div>
-      <Section title={t('photo.title')}>
-        <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-400">
-          <ImageUp size={22} />
-          <span className="px-6 text-center text-xs">{t('photo.drop')}</span>
-        </div>
-      </Section>
-
       <Section title={t('params.sizeSection')}>
         <Slider
           label={t('params.pitch')}

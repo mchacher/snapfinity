@@ -142,3 +142,14 @@ Snapfinity/
 - UI framework (vanilla vs React/Svelte) — decided in the first UI spec.
 - License — **GPL-3.0** (copyleft, consistent with Sowel's AGPL line). See `LICENSE`.
 - WASM payload (opencv.js + replicad ≈ 20 MB) and mobile perf → lazy-load, cache, minimal runtime compute.
+
+## 9. In-browser vision (spec 012)
+
+The vision pipeline runs **client-side**, as designed: opencv.js (token) + **onnxruntime-web**
+(u2netp) are dynamically imported on the first photo (a separate `analyze-*` chunk, off the
+first-paint path). The u2netp model lives in `public/models/`, and ort's WASM runtime is
+served **flat at `/ort/`** (copied by `vite-plugin-static-copy`, `wasmPaths` pointed there) so
+everything works **offline** with no CDN. Inference is single-threaded (`numThreads = 1`) to
+avoid needing cross-origin isolation (COOP/COEP) on static hosts. The mask cleanup
+(`src/vision/isolate.ts`) is **shared** with the Node `verify:seg` script — one implementation,
+two callers. Pure helpers (`maskBBox`, `footprintFromBBox`) stay cv-free and unit-tested.

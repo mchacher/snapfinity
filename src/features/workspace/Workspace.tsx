@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
+import { OutlinePanel } from './OutlinePanel';
 import { Viewer } from './Viewer';
 import { useBin } from './useBin';
+import { usePhotoAnalysis } from './usePhotoAnalysis';
+import { Tabs } from '../../ui/Tabs';
+import { useI18n } from '../../i18n';
 import { binFilename, downloadBlob, shapeToStep, shapeToStl } from '../../cad/export';
+import { footprintFromBBox } from '../../core/sizing';
 
 export interface Params {
   pitchMm: number;
@@ -15,6 +20,8 @@ export interface Params {
   thicknessMm: number;
   offsetMm: number;
   includeLip: boolean;
+  /** Calibration token outer diameter (mm) — measure the printed token for best accuracy. */
+  tokenOdMm: number;
 }
 
 const initialParams: Params = {
@@ -26,14 +33,34 @@ const initialParams: Params = {
   thicknessMm: 18,
   offsetMm: 1,
   includeLip: true,
+  tokenOdMm: 76.2,
 };
 
 export function Workspace() {
+  const { t } = useI18n();
   const [params, setParams] = useState<Params>(initialParams);
+  const [tab, setTab] = useState<'outline' | 'preview'>('outline');
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
   const { geometry, shape, status } = useBin(params);
+  const photo = usePhotoAnalysis();
+
+  // Calibration scale, recomputed from the detected token radius + the OD setting — so
+  // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
+  const tokenRadiusPx = photo.result?.token.found ? (photo.result.token.radiusPx ?? null) : null;
+  const scaleMmPerPx = tokenRadiusPx ? params.tokenOdMm / (2 * tokenRadiusPx) : null;
+
+  // Auto-size: derive cols/rows from the object bbox × scale, unless the user took over.
+  useEffect(() => {
+    if (params.manualSize) return;
+    const bbox = photo.result?.objectBBoxPx;
+    if (!bbox) return;
+    const fp = footprintFromBBox(bbox, scaleMmPerPx, params.pitchMm);
+    if (fp && (fp.cols !== params.cols || fp.rows !== params.rows)) {
+      setParams((p) => ({ ...p, cols: fp.cols, rows: fp.rows }));
+    }
+  }, [photo.result, scaleMmPerPx, params.manualSize, params.pitchMm, params.cols, params.rows]);
 
   const exportFile = (format: 'stl' | 'step') => {
     if (!shape) return;
@@ -48,8 +75,29 @@ export function Workspace() {
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
           <ControlsPanel params={params} set={set} />
         </aside>
-        <section className="min-h-[320px] p-4">
-          <Viewer geometry={geometry} status={status} />
+        <section className="flex min-h-0 flex-col p-4">
+          <Tabs
+            tabs={[
+              { id: 'outline', label: t('tabs.outline') },
+              { id: 'preview', label: t('tabs.preview') },
+            ]}
+            active={tab}
+            onChange={(id) => setTab(id as 'outline' | 'preview')}
+          />
+          <div className="relative mt-3 min-h-0 flex-1">
+            <div className={tab === 'outline' ? 'h-full' : 'hidden'}>
+              <OutlinePanel
+                params={params}
+                set={set}
+                photo={photo}
+                scaleMmPerPx={scaleMmPerPx}
+                onUpload={(file) => photo.analyze(file, params.tokenOdMm)}
+              />
+            </div>
+            <div className={tab === 'preview' ? 'h-full' : 'hidden'}>
+              <Viewer geometry={geometry} status={status} />
+            </div>
+          </div>
         </section>
       </main>
     </div>
