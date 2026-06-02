@@ -1,4 +1,24 @@
 import type { Point2D } from './offset';
+import { simplify } from './contour';
+
+/**
+ * Douglas–Peucker tolerance for the pocket polygon, in mm. Well below a typical 0.4 mm
+ * nozzle (and layer resolution), so dropping points within it leaves the printed pocket
+ * geometrically unchanged — it only removes the near-collinear points the clipper offset +
+ * Chaikin rounding leave behind, which would otherwise become extra `lineTo` edges the
+ * replicad boolean has to process.
+ */
+export const POCKET_SIMPLIFY_MM = 0.2;
+
+/**
+ * Decimate a pocket footprint (mm) for the CAD cut: Douglas–Peucker at `POCKET_SIMPLIFY_MM`.
+ * Pure. Falls back to the original ring if simplification would leave a degenerate (< 3 pt)
+ * polygon — so the caller always gets a valid ring.
+ */
+export function simplifyFootprintMm(footprint: Point2D[]): Point2D[] {
+  const ring = simplify(footprint, POCKET_SIMPLIFY_MM);
+  return ring.length >= 3 ? ring : footprint;
+}
 
 /**
  * Convert an offset contour (full-resolution pixels, image coords: origin top-left, y-down)
