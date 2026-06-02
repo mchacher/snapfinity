@@ -203,6 +203,17 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
         />
         <Toggle label={t('params.lip')} checked={params.includeLip} onChange={(v) => set('includeLip', v)} />
       </Section>
+
+      <Section title={t('params.render')}>
+        <Slider
+          label={t('params.opacity')}
+          value={params.renderOpacity}
+          onChange={(v) => set('renderOpacity', v)}
+          min={0.2}
+          max={1}
+          step={0.05}
+        />
+      </Section>
     </div>
   );
 }

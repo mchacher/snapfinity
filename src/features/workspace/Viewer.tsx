@@ -5,8 +5,18 @@ import { BusyOverlay } from '../../ui/BusyOverlay';
 import { useI18n } from '../../i18n';
 import type { BinStatus } from './useBin';
 
-export function Viewer({ geometry, status }: { geometry: BufferGeometry | null; status: BinStatus }) {
+export function Viewer({
+  geometry,
+  status,
+  opacity = 1,
+}: {
+  geometry: BufferGeometry | null;
+  status: BinStatus;
+  /** Render opacity 0.2…1. Below 1 the bin turns translucent so the pocket shows through. */
+  opacity?: number;
+}) {
   const { t } = useI18n();
+  const translucent = opacity < 1;
   return (
     <div className="relative h-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
       <Canvas camera={{ position: [120, 95, 140], fov: 32 }} dpr={[1, 2]}>
@@ -15,7 +25,16 @@ export function Viewer({ geometry, status }: { geometry: BufferGeometry | null; 
         <directionalLight position={[-70, 50, -50]} intensity={0.4} />
         {geometry && (
           <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]}>
-            <meshStandardMaterial color="#3b8ef0" roughness={0.5} metalness={0.1} />
+            {/* depthWrite off while translucent → the mesh doesn't occlude its own interior,
+                so the pocket cavity stays visible through the front wall. */}
+            <meshStandardMaterial
+              color="#3b8ef0"
+              roughness={0.5}
+              metalness={0.1}
+              transparent={translucent}
+              opacity={opacity}
+              depthWrite={!translucent}
+            />
           </mesh>
         )}
         <OrbitControls makeDefault enablePan target={[0, 12, 0]} />

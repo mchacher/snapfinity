@@ -48,6 +48,7 @@ export const en = {
     dimensions: 'Dimensions',
     sizeSection: 'Size',
     general: 'General',
+    render: 'Render',
   },
   export: {
     title: 'Export',

@@ -21,7 +21,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 014 | [mask-brush](../specs/014-mask-brush/) | ✅ Done | Manual **add/erase brush** on the mask to fine-tune; edits composited over the auto mask (persist across auto-params), contour re-derives live. Iteration 8 (part 3). |
 | 015 | [pocket-e2e](../specs/015-pocket-e2e/) | ✅ Done | Feed the offset contour (→ mm, centred) into the bin **pocket** — real object-shaped cavity in the 3D preview + STL/STEP. CAD rebuild gated to the Preview tab. Iteration 9. |
 | 016 | [webgpu-pocket-perf](../specs/016-webgpu-pocket-perf/) | ✅ Done | Perf step 1/3: u2netp on **WebGPU** (auto WASM fallback) + **decimate the pocket polygon** (Douglas–Peucker 0.2 mm) before the replicad cut. No behavioural change. Iteration 10. |
-| 017 | [cad-worker](../specs/017-cad-worker/) | In review | Perf step 2/3: move the replicad **build + mesh + export to a web worker**. The shape stays in the worker (WASM handle); main thread gets transferable mesh arrays + export blobs. Preview stays interactive during rebuild; export no longer freezes. Iteration 10. |
+| 017 | [cad-worker](../specs/017-cad-worker/) | ✅ Done | Perf step 2/3: move the replicad **build + mesh + export to a web worker**. The shape stays in the worker (WASM handle); main thread gets transferable mesh arrays + export blobs. Preview stays interactive during rebuild; export no longer freezes. Iteration 10. |
+| 018 | [3d-transparency](../specs/018-3d-transparency/) | In review | Preview **opacity slider** (Render section, 0.2–1, default 1) — translucent bin (`depthWrite` off) to see the pocket through the walls. Preview-only, no geometry/export change. Iteration 11. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
