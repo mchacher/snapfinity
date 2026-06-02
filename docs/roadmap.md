@@ -42,6 +42,31 @@ measurable test case (IoU), not an eyeball check.
 | 8   | End-to-end wiring + UX                   | photo→bin→preview→export; params (pitch, base variant, height, offset) | integration: 1 photo→valid STL; manual UX | coherent product |
 | 9+  | Base variants, free pitch, mobile, deploy | …                                                           | …                                                  | polish |
 
+## Shipped since (iteration 10 — perf pass)
+
+| #   | Spec | Deliverable |
+| --- | ---- | ----------- |
+| 016 | webgpu-pocket-perf | u2netp on WebGPU (auto WASM fallback) + decimate the pocket polygon before the replicad cut |
+| 017 | cad-worker | replicad build + mesh + export moved to a web worker (no UI freeze; main bundle −333 kB) |
+
+Perf step 3 (vision worker: opencv + onnx + OffscreenCanvas decode) is **deferred** — the
+only remaining freeze is the `analyzePhoto` pass; revisit if it bothers, starting with a
+de-risk spike.
+
+## Backlog — next features (prioritized)
+
+Agreed order (each becomes its own spec `NNN` + `feat/` branch + PR, via the
+`snapfinity-feature` workflow). Effort: XS < S < M < L; R&D = needs scoping first.
+
+| #   | Feature | Zone | Effort | Notes / key tests |
+| --- | ------- | ---- | ------ | ----------------- |
+| 1 | **3D render transparency** | preview (three.js) | XS | `material.transparent + opacity` + an opacity slider on the Preview tab — see inside the pocket. Manual visual. |
+| 2 | **Printable 1:1 top-view PDF** | new export | M | Footprint (mm) → exact PDF points; **multi-A4 tiling** for large objects; registration marks + a control ruler. Pure mm→pt + page-layout core is unit-tested. Must tell the user to print at 100 % (disable "fit to page"). Lets the user validate the outline before printing the bin. |
+| 3 | **Side grip notch (scoop)** | CAD (replicad) | L | Gridfinity-style scoop/finger cutout on a wall; parametric (side, depth); interacts with pocket + lip. Tested via bin dims/volume. |
+| 4 | **Detect & straighten "straight" contour runs** | contour (core) | M | Detect near-rectilinear segments and, **optionally**, rectify them (angle-snap?). Builds on `simplify`/`smoothContour`. Pure, unit-tested. Great for manufactured objects. |
+| 5 | **Logo / favicon + site publication** | asset + infra/CI | S + M | SVG logo/favicon (iterate on taste), then deploy to GitHub/Cloudflare Pages: Vite `base`, SPA routing, ~35 MB WASM payload, caching (no COOP/COEP — `numThreads=1`). Makes it usable by others. |
+| 6 | **Revisit the calibration token?** | vision/calib + physical | R&D | Exploratory: more robust fiducial? different size? ArUco/AprilTag? **Decide before any spec.** Not urgent while detection holds. |
+
 ## Contour extraction (next iteration)
 
 Bridges segmentation (it 8a, spec 012) → pocket (it 3 CAD). The mask is binary at pixel
