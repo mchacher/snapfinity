@@ -12,6 +12,7 @@
     "noImplicitReturns": true,
     "isolatedModules": true,
     "moduleDetection": "force",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

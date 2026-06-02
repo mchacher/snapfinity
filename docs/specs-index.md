@@ -12,6 +12,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 005 | [offset-clipper](../specs/005-offset-clipper/) | ✅ Done | Polygon clearance offset (clipper-lib), pure core. Iteration 5. |
 | 006 | [tool-pocket](../specs/006-tool-pocket/) | ✅ Done | Tool-shaped pocket cut into the bin (synthetic footprint); `hollow` option; meshing fix. Iteration 3. |
 | 007 | [cad-refinements](../specs/007-cad-refinements/) | ✅ Done | Foot → spec 4.75 mm; STL mesh tolerance (2×1: 17.5 MB → 0.84 MB). |
+| 008 | [ui-foundation](../specs/008-ui-foundation/) | In review | React + Tailwind design system + single-workspace shell (flat sections, azure accent) + i18n FR/EN. Iteration 4 (part 1). |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
