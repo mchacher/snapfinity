@@ -3,6 +3,7 @@ import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
 import { NumberField } from '../../ui/NumberField';
 import { Toggle } from '../../ui/Toggle';
+import { Tabs } from '../../ui/Tabs';
 import { useI18n } from '../../i18n';
 import type { Params } from './Workspace';
 
@@ -14,10 +15,12 @@ interface Props {
   set: <K extends keyof Params>(key: K, value: Params[K]) => void;
   /** Which tab is active — the left panel shows the tools for that tab. */
   tab: 'outline' | 'preview';
+  onResetEdits: () => void;
+  hasEdits: boolean;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
-export function ControlsPanel({ params, set, tab }: Props) {
+export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Props) {
   const { t } = useI18n();
 
   if (tab === 'outline') {
@@ -98,6 +101,34 @@ export function ControlsPanel({ params, set, tab }: Props) {
             step={0.1}
             unit="mm"
           />
+        </Section>
+        <Section title={t('params.brush')}>
+          <div className="mb-3">
+            <Tabs
+              tabs={[
+                { id: 'add', label: t('params.brushAdd') },
+                { id: 'erase', label: t('params.brushErase') },
+              ]}
+              active={params.brushMode}
+              onChange={(id) => set('brushMode', id as 'add' | 'erase')}
+            />
+          </div>
+          <Slider
+            label={t('params.brushSize')}
+            value={params.brushSize}
+            onChange={(v) => set('brushSize', v)}
+            min={5}
+            max={80}
+            step={1}
+          />
+          <button
+            type="button"
+            onClick={onResetEdits}
+            disabled={!hasEdits}
+            className="mt-1 text-xs font-medium text-accent-700 hover:underline disabled:text-slate-300 disabled:no-underline"
+          >
+            {t('params.reset')}
+          </button>
         </Section>
       </div>
     );

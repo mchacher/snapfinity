@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PhotoAnalysis } from '../../vision/analyze';
 import type { BBox } from '../../vision/mask';
 import type { Point2D } from '../../core/offset';
@@ -41,6 +41,9 @@ export function PhotoOverlay({
   maskOpacity = 0.45,
   brightness = 0,
   contrast = 0,
+  onPaint,
+  brushSize = 24,
+  brushErase = false,
 }: {
   analysis: PhotoAnalysis;
   /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
@@ -56,8 +59,14 @@ export function PhotoOverlay({
   /** Display brightness/contrast — mirrors what u2netp saw (applied at canvas resolution). */
   brightness?: number;
   contrast?: number;
+  /** Brush: paint a disc in mask-space; radius in CSS px; erase tints the cursor differently. */
+  onPaint?: (maskX: number, maskY: number, maskRadius: number) => void;
+  brushSize?: number;
+  brushErase?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const painting = useRef(false);
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -136,5 +145,59 @@ export function PhotoOverlay({
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
   }, [analysis, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
 
-  return <canvas ref={ref} className="max-h-full max-w-full rounded-lg" />;
+  const canPaint = !!onPaint && !!mask;
+
+  const paintAt = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = ref.current;
+    if (!canvas || !onPaint || !mask) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const mx = (px / rect.width) * mask.width;
+    const my = (py / rect.height) * mask.height;
+    const mr = (brushSize / rect.width) * mask.width;
+    onPaint(mx, my, mr);
+  };
+
+  return (
+    <div className="relative inline-flex max-h-full max-w-full">
+      <canvas
+        ref={ref}
+        className={`max-h-full max-w-full rounded-lg ${canPaint ? 'cursor-none touch-none' : ''}`}
+        onPointerDown={
+          canPaint
+            ? (e) => {
+                painting.current = true;
+                e.currentTarget.setPointerCapture(e.pointerId);
+                paintAt(e);
+              }
+            : undefined
+        }
+        onPointerMove={
+          canPaint
+            ? (e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                if (painting.current) paintAt(e);
+              }
+            : undefined
+        }
+        onPointerUp={canPaint ? () => (painting.current = false) : undefined}
+        onPointerLeave={canPaint ? () => setCursor(null) : undefined}
+      />
+      {canPaint && cursor && (
+        <span
+          className="pointer-events-none absolute rounded-full border-2"
+          style={{
+            left: cursor.x - brushSize,
+            top: cursor.y - brushSize,
+            width: brushSize * 2,
+            height: brushSize * 2,
+            borderColor: brushErase ? 'rgba(239,68,68,0.9)' : 'rgba(47,120,212,0.9)',
+            background: brushErase ? 'rgba(239,68,68,0.12)' : 'rgba(47,120,212,0.12)',
+          }}
+        />
+      )}
+    </div>
+  );
 }
