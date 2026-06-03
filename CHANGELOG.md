@@ -18,6 +18,8 @@ A small follow-up to the first release.
 
 - An optional **alignment grid** over the 2D photo view (a framing aid to check the object and
   token are square), toggled from **Affichage → Grille d'alignement**. Off by default; display-only.
+- The **app version** is now shown in the UI (landing footer + workspace header), sourced from
+  `package.json` at build time.
 
 ### Changed
 

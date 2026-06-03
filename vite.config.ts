@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
+// Expose the package version to the app (shown in the UI) — single source of truth.
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
+
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(version) },
   // Host-agnostic base path: `/` by default (root domain / Cloudflare Pages), or a project
   // subpath like `/snapfinity/` for GitHub Pages — set BASE_PATH at build time. Runtime assets
   // resolve via `import.meta.env.BASE_URL`, so a subpath just works (see spec 022).
