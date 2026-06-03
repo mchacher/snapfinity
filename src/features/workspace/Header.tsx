@@ -25,7 +25,7 @@ export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, on
   return (
     <header className="flex items-center border-b border-slate-200 bg-white px-4 py-2.5">
       <div className="flex items-center gap-2">
-        <Logo size={28} className="text-accent-600" />
+        <Logo size={34} className="text-accent-600" />
         <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
         <span className="hidden text-xs text-slate-400 sm:inline">· {t('app.tagline')}</span>
         <div className="ml-3 flex items-center gap-0.5">
