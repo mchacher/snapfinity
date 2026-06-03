@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-// IMPORTANT: only TYPE-import from `analyze` here. A value import (e.g. framingKey) pulls in
-// analyze.ts's static deps (opencv + onnxruntime-web) eagerly, which hangs vitest's module scan
-// and would re-bloat the entry chunk. framingKey/FramedPhoto live in the pure `photo-transform`.
+// IMPORTANT: only TYPE-import from `analyze`/`edges` here. A value import pulls in their static
+// deps (opencv + onnxruntime-web) eagerly, which hangs vitest's module scan and re-bloats the
+// entry chunk. framingKey/FramedPhoto live in the pure `photo-transform`.
 import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
+import type { SegmentMode } from '../../vision/segment-mode';
 import { framingKey, type CropRect, type FramedPhoto } from '../../vision/photo-transform';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
@@ -133,7 +134,11 @@ export function usePhotoAnalysis({
  * (only the cheap re-threshold + cv post-processing). The heavy module is already loaded by
  * the time there's a result, so the dynamic import resolves instantly.
  */
-export function useDerivedMask(result: PhotoAnalysis | null, threshold: number): DerivedMask | null {
+export function useDerivedMask(
+  result: PhotoAnalysis | null,
+  threshold: number,
+  mode: SegmentMode = 'auto',
+): DerivedMask | null {
   const [derived, setDerived] = useState<DerivedMask | null>(null);
   const lastResult = useRef<PhotoAnalysis | null>(null);
 
@@ -143,15 +148,15 @@ export function useDerivedMask(result: PhotoAnalysis | null, threshold: number):
       setDerived(null);
       return;
     }
-    // A fresh photo derives immediately (no perceptible lag on open); only threshold tweaks
-    // are debounced so dragging the slider coalesces into one re-derive.
+    // A fresh photo derives immediately (no perceptible lag on open); only threshold/mode tweaks
+    // are debounced so dragging the slider / flipping the mode coalesces into one re-derive.
     const immediate = lastResult.current !== result;
     lastResult.current = result;
     let cancelled = false;
     const run = () =>
       void (async () => {
         const { deriveMask } = await import('../../vision/analyze');
-        if (!cancelled) setDerived(deriveMask(result, threshold));
+        if (!cancelled) setDerived(deriveMask(result, threshold, mode));
       })();
     if (immediate) {
       run();
@@ -164,7 +169,7 @@ export function useDerivedMask(result: PhotoAnalysis | null, threshold: number):
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [result, threshold]);
+  }, [result, threshold, mode]);
 
   return derived;
 }

@@ -158,6 +158,18 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
           )}
         </Section>
         <Section title={t('tabs.outline')}>
+          <div className="mb-3">
+            <span className="mb-1 block text-sm text-slate-600">{t('params.segment')}</span>
+            <Tabs
+              tabs={[
+                { id: 'auto', label: t('params.segAuto') },
+                { id: 'standard', label: t('params.segStandard') },
+                { id: 'edges', label: t('params.segEdges') },
+              ]}
+              active={params.segmentMode}
+              onChange={(id) => set('segmentMode', id as Params['segmentMode'])}
+            />
+          </div>
           <Slider
             label={t('params.threshold')}
             value={params.detectThreshold}

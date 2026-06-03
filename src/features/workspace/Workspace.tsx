@@ -13,6 +13,7 @@ import { refineContour } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
 import { straightenAngleDeg, normaliseCrop, rotateCrop90, type CropRect } from '../../vision/photo-transform';
+import type { SegmentMode } from '../../vision/segment-mode';
 import { useI18n } from '../../i18n';
 
 /** Fold an angle to (−180°, 180°] so repeated quarter-turns stay readable. */
@@ -57,6 +58,8 @@ export interface Params {
   contrast: number;
   /** u2netp saliency cut, higher = stricter (drops shadows). */
   detectThreshold: number;
+  /** Détourage source: auto-pick (default) / force u2netp (standard) / force edges (transparent). */
+  segmentMode: SegmentMode;
   /** Brush: add paints object, erase removes it. */
   brushMode: 'add' | 'erase';
   /** Brush radius in canvas CSS px. */
@@ -101,6 +104,7 @@ const initialParams: Params = {
   brightness: 0,
   contrast: 0,
   detectThreshold: 0.5,
+  segmentMode: 'auto',
   brushMode: 'add',
   brushSize: 24,
   showMask: true,
@@ -161,7 +165,7 @@ export function Workspace() {
     setFrameTool('none'); // crop is applied once → leave crop mode
   };
   const resetFraming = () => setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
-  const derived = useDerivedMask(photo.result, params.detectThreshold);
+  const derived = useDerivedMask(photo.result, params.detectThreshold, params.segmentMode);
   const { editedMask, hasEdits, paint, reset, version, snapshot, restore } = useMaskEdit(
     derived,
     photo.result?.width ?? 0,
