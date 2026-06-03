@@ -236,7 +236,15 @@ export function PhotoOverlay({
       )}
       {tool === 'straighten' && drag && (
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          <line x1={drag.sx} y1={drag.sy} x2={drag.ex} y2={drag.ey} stroke="rgb(47,120,212)" strokeWidth={2} />
+          <line
+            x1={drag.sx}
+            y1={drag.sy}
+            x2={drag.ex}
+            y2={drag.ey}
+            stroke="rgb(239,68,68)"
+            strokeWidth={2.5}
+            strokeDasharray="7 5"
+          />
         </svg>
       )}
       {tool === 'crop' && drag && (
