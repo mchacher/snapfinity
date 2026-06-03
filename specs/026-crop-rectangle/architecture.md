@@ -36,6 +36,29 @@ Keeping the draft local to `PhotoOverlay` avoids threading a fast-changing rect 
 through `Workspace`/`OutlinePanel` on every pointer move, and keeps apply/cancel as two small
 callbacks. The on-photo toolbar puts the confirm where the user's eyes are (on the zone).
 
+## Render-then-détourage (so a crop feels instant)
+
+`usePhotoAnalysis` is split in two so applying a crop shows the result immediately instead of
+freezing on the old image until the whole pipeline finishes:
+
+- **fast** — `framePhoto(file, {straightenDeg, cropRect})` (new, in `analyze.ts`) does only
+  decode (cached) + rotate/crop → the displayed pixels. No opencv, no token, no inference. A
+  dedicated effect (deps: framing only) sets `framed` right away, so the cropped photo paints in
+  ~one frame.
+- **slow** — `analyzePhoto` (token + u2netp) runs after, debounced, and sets `result`.
+- **staleness gate** — `framingPending` is true while `result`'s framing trails `framed`. While
+  pending, `OutlinePanel` draws only the photo (no mask/contour/token-circle), so a contour from
+  the *old* framing is never painted over the freshly cropped image. The pill reads "Détourage…".
+
+`PhotoOverlay` therefore takes `image` (the framed photo = the gesture coordinate space) + a
+`token` prop, instead of a single `analysis` object — the photo and the détourage can update
+independently. Verified: at ~250 ms after Appliquer the canvas already shows the cropped frame
+while the détourage is still pending.
+
+> The détourage still runs on the **main thread**, so there's a brief freeze *while it computes*
+> (after the cropped image is shown). Removing that freeze is the deferred **vision worker**
+> (perf step 3) — out of scope here.
+
 ## Why apply-on-confirm (not live)
 
 Each crop change re-runs the full vision pipeline (~2–3 s, a brief freeze). Live resizing would

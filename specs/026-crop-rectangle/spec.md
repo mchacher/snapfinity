@@ -12,6 +12,9 @@ standard **crop tool**:
   resize and a draggable interior to move it. The area outside the zone is dimmed.
 - The crop is **applied once**, on an explicit **"Appliquer"** action — not live — so the
   expensive re-analysis (~2–3 s) runs a single time instead of on every handle move.
+- Applying is **two-phase so it feels instant**: the cropped photo is **rendered immediately**
+  (a cheap canvas transform), *then* the détourage (token + u2netp) runs and the contour appears
+  when it's ready — the stale, differently-framed contour is not drawn over the new crop.
 
 This refines spec **024** (photo framing); the rotation / 90°-turn / straighten tools are
 unchanged. Only the crop sub-tool's UX changes; the underlying `cropRect` param + transform

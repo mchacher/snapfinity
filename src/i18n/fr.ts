@@ -9,6 +9,7 @@ export const fr: Dict = {
     drop: 'Dépose une photo (objet + token)',
     hint: 'Un fond clair et uni donne les meilleurs résultats',
     analyzing: 'Analyse…',
+    detourage: 'Détourage…',
     error: "Échec de l'analyse",
     retry: 'Essaie une autre photo',
     calibration: 'Calibration',

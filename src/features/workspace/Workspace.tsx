@@ -146,8 +146,9 @@ export function Workspace() {
   const rotate90 = (dir: -1 | 1) =>
     setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + dir * 90), cropRect: null }));
   const onCrop = (p1: Point2D, p2: Point2D) => {
-    const w = photo.result?.width ?? 0;
-    const h = photo.result?.height ?? 0;
+    // normalise against the *displayed* (framed) image — the gesture was drawn on it.
+    const w = photo.framed?.width ?? 0;
+    const h = photo.framed?.height ?? 0;
     if (w < 1 || h < 1) return;
     const inner = normaliseCrop(p1, p2, w, h);
     if (inner.w < 0.02 || inner.h < 0.02) return; // ignore tiny accidental drags

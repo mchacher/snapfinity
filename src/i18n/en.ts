@@ -7,6 +7,7 @@ export const en = {
     drop: 'Drop a photo (object + token)',
     hint: 'Plain light background works best',
     analyzing: 'Analyzing…',
+    detourage: 'Detecting outline…',
     error: 'Analysis failed',
     retry: 'Try another photo',
     calibration: 'Calibration',

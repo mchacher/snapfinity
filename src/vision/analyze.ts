@@ -33,6 +33,18 @@ export interface DerivedMask {
   outline: Point2D[];
 }
 
+/** The current (rotated/cropped) photo for display — produced fast, before the détourage. */
+export interface FramedPhoto {
+  imageData: ImageData;
+  width: number;
+  height: number;
+}
+
+/** Identifies a framing (rotation + crop) — used to cache framed work and detect a stale result. */
+export function framingKey(straightenDeg: number, cropRect: CropRect | null): string {
+  return `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+}
+
 export interface AnalyzeOptions {
   tokenOdMm?: number;
   /** Pre-inference background-flatten strength (0…1, divide-by-blur) — removes soft shadows. */
@@ -93,7 +105,7 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
     originalCache = { file, imageData: await decodePhoto(file) };
   }
 
-  const key = `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+  const key = framingKey(straightenDeg, cropRect);
   if (!framedCache || framedCache.file !== file || framedCache.framed.key !== key) {
     const ref = await getRefContour();
     const imageData = transformPhoto(originalCache.imageData, straightenDeg, cropRect);
@@ -122,6 +134,24 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
       : { found: false },
     saliency,
   };
+}
+
+/**
+ * **Fast framing only**: decode (cached) + rotate/crop → the displayed pixels. No opencv, no
+ * token detection, no inference — so the cropped/straightened photo can be shown to the user
+ * immediately, *before* the heavy détourage (`analyzePhoto`) runs. Populates the decode cache
+ * that `analyzePhoto` then reuses.
+ */
+export async function framePhoto(
+  file: Blob,
+  options: { straightenDeg?: number; cropRect?: CropRect | null } = {},
+): Promise<FramedPhoto> {
+  const { straightenDeg = 0, cropRect = null } = options;
+  if (originalCache?.file !== file) {
+    originalCache = { file, imageData: await decodePhoto(file) };
+  }
+  const imageData = transformPhoto(originalCache.imageData, straightenDeg, cropRect);
+  return { imageData, width: imageData.width, height: imageData.height };
 }
 
 /** Cap the cleanup/contour working resolution — full-res cv ops are far too heavy to run live. */

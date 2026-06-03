@@ -69,6 +69,8 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
               <button
                 type="button"
                 onClick={() => onFrameTool(frameTool === 'crop' ? 'none' : 'crop')}
+                title={t('params.cropTool')}
+                aria-label={t('params.cropTool')}
                 aria-pressed={frameTool === 'crop'}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-1.5 text-sm transition-colors ${
                   frameTool === 'crop'
