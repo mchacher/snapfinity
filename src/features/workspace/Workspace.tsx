@@ -12,6 +12,9 @@ import { smoothContour } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
 import { useI18n } from '../../i18n';
+// Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
+import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
+import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
 
 export interface Params {
   pitchMm: number;
@@ -159,9 +162,15 @@ export function Workspace() {
     }
     const dims = `${Math.round(maxX - minX)} × ${Math.round(maxY - minY)} mm`;
     const { buildPlanPdf } = await import('../../pdf/plan');
+    const loadFont = (url: string) =>
+      fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((b) => new Uint8Array(b));
+    const [regular, bold] = await Promise.all([loadFont(interRegularUrl), loadFont(interBoldUrl)]);
     const blob = await buildPlanPdf({
       objectMm,
       pocketMm,
+      fonts: { regular, bold },
       labels: {
         title: t('plan.title'),
         dims,

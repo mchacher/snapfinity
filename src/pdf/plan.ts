@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import type { Point2D } from '../core/offset';
 import {
   A4_H_MM,
@@ -27,12 +28,24 @@ export interface PlanLabels {
   pageWord: string;
 }
 
+/**
+ * Font bytes (TTF/OTF/WOFF) for the regular + bold faces. They are **embedded + subset** into
+ * the PDF — non-embedded base-14 fonts are why some printers reject the job at the spooler. The
+ * caller provides the bytes (browser: fetch a bundled `?url` asset; tests: read from disk) so
+ * this builder stays free of Vite/Node specifics and unit-testable.
+ */
+export interface PlanFonts {
+  regular: Uint8Array;
+  bold: Uint8Array;
+}
+
 export interface PlanInput {
   /** Detected object outline in mm (drawn solid). */
   objectMm: Point2D[];
   /** Pocket outline (object + clearance) in mm (drawn dashed). May equal/omit the object. */
   pocketMm: Point2D[];
   labels: PlanLabels;
+  fonts: PlanFonts;
 }
 
 const INK = rgb(0.12, 0.16, 0.22); // object outline (slate-800)
@@ -60,15 +73,17 @@ function toPt(p: Point2D, originXMm: number, originYMm: number): { x: number; y:
  * tiled across A4 sheets when larger than one content area. Runs in the browser and in Node
  * (pdf-lib), so it's unit-testable.
  */
-export async function buildPlanPdf({ objectMm, pocketMm, labels }: PlanInput): Promise<Blob> {
+export async function buildPlanPdf({ objectMm, pocketMm, labels, fonts }: PlanInput): Promise<Blob> {
   const rings = [objectMm, pocketMm].filter((r) => r.length >= 3);
   const bbox = bboxOfMm(rings);
   const layout = planPages(bbox);
   const single = layout.pages.length === 1;
 
   const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  doc.registerFontkit(fontkit);
+  // Embed + subset the real font so the print spooler always has the glyphs it needs.
+  const font = await doc.embedFont(fonts.regular, { subset: true });
+  const fontBold = await doc.embedFont(fonts.bold, { subset: true });
 
   const drawRing = (
     page: ReturnType<typeof doc.addPage>,
@@ -151,7 +166,9 @@ export async function buildPlanPdf({ objectMm, pocketMm, labels }: PlanInput): P
     page.drawText(labels.ruler, { x: rulerEnd + 8, y: rulerY - 2, size: 8, font, color: MUTED });
   }
 
-  const bytes = await doc.save();
+  // Classic structure (no compressed object/xref streams) for the widest printer/RIP support,
+  // alongside the embedded fonts above.
+  const bytes = await doc.save({ useObjectStreams: false });
   // Copy into a fresh ArrayBuffer-backed view so the Blob part is typed as ArrayBuffer (pdf-lib
   // types its output as the wider ArrayBufferLike, which TS rejects as a BlobPart under strict).
   const out = new Uint8Array(bytes.byteLength);

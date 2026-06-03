@@ -47,6 +47,13 @@ matches the outline, and see the actual pocket (object + clearance) that will be
 - The PDF is generated in the browser (pdf-lib) and downloaded; the photo/contour never leave
   the device.
 
+### R5 — Print-robust output
+
+- Fonts are **embedded + subset** (a bundled Inter face via `@pdf-lib/fontkit`) and the PDF is
+  saved with a **classic structure** (`useObjectStreams: false`). Non-embedded base-14 fonts
+  and compressed object/xref streams make some printers reject the job at the spooler (observed
+  with Acrobat → physical printer); embedding + classic structure fix it.
+
 ## Acceptance criteria
 
 - [ ] "Plan PDF" exports a PDF; printed at 100 %, the 50 mm ruler measures 50 mm. *(user to verify)*

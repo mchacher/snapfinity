@@ -44,6 +44,13 @@ buildPlanPdf({ objectMm, pocketMm, labels }): Promise<Blob>
 `pdf-lib` runs in Node too, so `buildPlanPdf` is unit-testable (page count, non-empty bytes)
 without a browser.
 
+**Print robustness.** Fonts are **embedded + subset** via `@pdf-lib/fontkit` (bundled Inter
+WOFF faces, passed in as `fonts` bytes so the builder stays Vite/Node-agnostic), and the PDF is
+saved with `useObjectStreams: false` (classic xref, no compressed object streams). Non-embedded
+base-14 fonts + compressed streams cause spooler print failures (Acrobat → physical printer);
+this combo fixes it. The browser fetches the bundled `*.woff?url` assets at export (lazy); the
+test reads them from `node_modules`.
+
 ## UI wiring
 
 - **Header**: a `Plan PDF` button in the export group, `disabled` unless `canExportPdf`
