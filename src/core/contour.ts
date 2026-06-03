@@ -143,6 +143,116 @@ export function rectifyStraightEdges(points: Point2D[], toleranceDeg: number): P
   return rot.map((p) => rotatePoint(p, axis, cx, cy));
 }
 
+// ── Editable contour (spec 035) ────────────────────────────────────────────────
+// Pure helpers for hand-editing a closed contour as a polygon of draggable nodes. Points are in
+// full-res image px; the ring is implicitly closed (segment N-1 → 0 included).
+
+function boundingDiag(points: Point2D[]): number {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return Math.hypot(maxX - minX, maxY - minY);
+}
+
+/** Closest point on segment `a`–`b` to `p`, plus the squared distance to it. */
+function closestOnSegment(p: Point2D, a: Point2D, b: Point2D): { point: Point2D; dist2: number } {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2));
+  const point: Point2D = [a[0] + t * dx, a[1] + t * dy];
+  const ddx = p[0] - point[0];
+  const ddy = p[1] - point[1];
+  return { point, dist2: ddx * ddx + ddy * ddy };
+}
+
+/**
+ * Reduce a contour to a hand-editable number of nodes: Douglas–Peucker with the tolerance raised
+ * until the node count is ≤ `max` (default 48). Already-small rings get a light cleanup. Pure.
+ */
+export function simplifyForEdit(points: Point2D[], max = 48): Point2D[] {
+  if (points.length <= 3) return points.slice();
+  const diag = boundingDiag(points) || 1;
+  let tol = diag * 0.004;
+  let out = simplify(points, tol);
+  let guard = 0;
+  while (out.length > max && guard < 24) {
+    tol *= 1.5;
+    out = simplify(points, tol);
+    guard += 1;
+  }
+  return out.length >= 3 ? out : points.slice();
+}
+
+/** Index of the node within `maxDist` (image px) of `p`, nearest first, or -1. */
+export function nearestNode(points: Point2D[], p: Point2D, maxDist: number): number {
+  let best = -1;
+  let bestD2 = maxDist * maxDist;
+  for (let i = 0; i < points.length; i += 1) {
+    const dx = points[i][0] - p[0];
+    const dy = points[i][1] - p[1];
+    const d2 = dx * dx + dy * dy;
+    if (d2 <= bestD2) {
+      bestD2 = d2;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * Nearest segment of the closed ring to `p` within `maxDist` (image px). Returns the segment's
+ * start index (segment goes from `index` to `(index+1) % n`) and the projected point on it, or null.
+ */
+export function nearestSegment(
+  points: Point2D[],
+  p: Point2D,
+  maxDist: number,
+): { index: number; point: Point2D } | null {
+  const n = points.length;
+  if (n < 2) return null;
+  let best: { index: number; point: Point2D } | null = null;
+  let bestD2 = maxDist * maxDist;
+  for (let i = 0; i < n; i += 1) {
+    const { point, dist2 } = closestOnSegment(p, points[i], points[(i + 1) % n]);
+    if (dist2 <= bestD2) {
+      bestD2 = dist2;
+      best = { index: i, point };
+    }
+  }
+  return best;
+}
+
+/** Replace node `i` with `p`. Pure (returns a new ring). */
+export function moveNode(points: Point2D[], i: number, p: Point2D): Point2D[] {
+  if (i < 0 || i >= points.length) return points.slice();
+  const out = points.slice();
+  out[i] = [p[0], p[1]];
+  return out;
+}
+
+/** Insert `p` just after node `afterIndex` (so it lands on the segment afterIndex→afterIndex+1). */
+export function insertNode(points: Point2D[], afterIndex: number, p: Point2D): Point2D[] {
+  const out = points.slice();
+  out.splice(afterIndex + 1, 0, [p[0], p[1]]);
+  return out;
+}
+
+/** Remove node `i`, keeping at least 3 nodes (a closed polygon). Pure. */
+export function deleteNode(points: Point2D[], i: number): Point2D[] {
+  if (points.length <= 3 || i < 0 || i >= points.length) return points.slice();
+  const out = points.slice();
+  out.splice(i, 1);
+  return out;
+}
+
 export interface RefineOptions {
   /** Smoothing knob 0..1 (drives the simplify tolerance + Chaikin rounding). */
   smoothingFactor: number;

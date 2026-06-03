@@ -10,6 +10,14 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Added
+
+- **Editable détourage** — hand-tune the detected contour: *Modifier le contour* opens a focused
+  editor (the photo dims) where the outline shows as draggable node handles. **Drag** a node to
+  move it, **click an edge** to add one, **double-click** a node to remove it; *Réinitialiser*
+  returns to the auto detection. The edited contour drives the pocket / 3D / PDF, and node edits
+  undo/redo. First step of the editable-détourage roadmap (GrabCut + magnetic lasso to follow).
+
 ## [1.0.1] - 2026-06-03
 
 A small follow-up to the first release.

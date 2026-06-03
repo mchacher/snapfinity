@@ -9,7 +9,7 @@ import { useMaskEdit } from './useMaskEdit';
 import { useUndoRedo } from './useUndoRedo';
 import { binFilename, downloadBlob } from '../../cad/export';
 import { gridForFootprint } from '../../core/sizing';
-import { refineContour } from '../../core/contour';
+import { refineContour, simplifyForEdit } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
 import { straightenAngleDeg, normaliseCrop, rotateCrop90, type CropRect } from '../../vision/photo-transform';
@@ -32,8 +32,8 @@ function composeCrop(outer: CropRect | null, inner: CropRect): CropRect {
   };
 }
 
-/** Photo framing tool (Outline tab): brush (default) vs straighten vs crop. */
-export type FrameTool = 'none' | 'straighten' | 'crop';
+/** Photo framing tool (Outline tab): brush (default) vs straighten vs crop vs contour edit. */
+export type FrameTool = 'none' | 'straighten' | 'crop' | 'contour';
 // Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
 import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
 import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
@@ -130,6 +130,8 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
   const [params, setParams] = useState<Params>(initialParams);
   const [tab, setTab] = useState<'outline' | 'preview'>('outline');
   const [frameTool, setFrameTool] = useState<FrameTool>('none');
+  // Hand-edited contour (spec 035): when set, it overrides the auto contour everywhere downstream.
+  const [editedContour, setEditedContour] = useState<Point2D[] | null>(null);
   const [photoEpoch, setPhotoEpoch] = useState(0); // bumps per new photo → resets undo history
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
@@ -147,16 +149,19 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
     // accumulate the rotation. The crop is KEPT: a fine straighten just rotates the content
     // inside the cropped frame (the expected result), so it must not revert to the full photo.
     setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + straightenAngleDeg(p1, p2)) }));
+    setEditedContour(null); // geometry changed → a hand-edited contour would be stale
     setFrameTool('none'); // the ruler is one-shot: it deactivates after setting the angle
   };
   /** Quarter-turn left (−90°) / right (+90°). The crop is **kept**, turned with the photo so it
    * still frames the same content (the 90° swap of W/H is handled by `rotateCrop90`). */
-  const rotate90 = (dir: -1 | 1) =>
+  const rotate90 = (dir: -1 | 1) => {
     setParams((p) => ({
       ...p,
       straightenDeg: normaliseAngle(p.straightenDeg + dir * 90),
       cropRect: rotateCrop90(p.cropRect, dir),
     }));
+    setEditedContour(null);
+  };
   const onCrop = (p1: Point2D, p2: Point2D) => {
     // normalise against the *displayed* (framed) image — the gesture was drawn on it.
     const w = photo.framed?.width ?? 0;
@@ -165,9 +170,13 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
     const inner = normaliseCrop(p1, p2, w, h);
     if (inner.w < 0.02 || inner.h < 0.02) return; // ignore tiny accidental drags
     setParams((p) => ({ ...p, cropRect: composeCrop(p.cropRect, inner) }));
+    setEditedContour(null);
     setFrameTool('none'); // crop is applied once → leave crop mode
   };
-  const resetFraming = () => setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
+  const resetFraming = () => {
+    setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
+    setEditedContour(null);
+  };
   const derived = useDerivedMask(photo.result, params.detectThreshold, params.segmentMode);
   const { editedMask, hasEdits, paint, reset, version, snapshot, restore } = useMaskEdit(
     derived,
@@ -176,7 +185,16 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
   );
 
   // Multi-step undo/redo over the params + the brush edits (see useUndoRedo).
-  const history = useUndoRedo({ params, setParams, version, snapshot, restore, resetKey: photoEpoch });
+  const history = useUndoRedo({
+    params,
+    setParams,
+    version,
+    snapshot,
+    restore,
+    editedContour,
+    setEditedContour,
+    resetKey: photoEpoch,
+  });
   const historyRef = useRef(history);
   historyRef.current = history;
   // Standard shortcuts on macOS / Windows / Linux: ⌘/Ctrl+Z = undo, ⌘/Ctrl+⇧Z = redo, and
@@ -208,7 +226,7 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
   // Contour pipeline (pure, live): smoothed outline → clearance offset (px for the overlay),
   // then the mm footprint that hollows the bin. One source of truth, shared by the overlay
   // (px) and the CAD pocket (mm).
-  const contour = useMemo(
+  const autoContour = useMemo(
     () =>
       editedMask
         ? refineContour(editedMask.outline, {
@@ -219,6 +237,20 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
         : [],
     [editedMask, params.smoothingFactor, params.straightenEdges, params.straightenToleranceDeg],
   );
+  // A hand-edited contour (spec 035) takes over from the auto one — for the overlay, offset,
+  // pocket and PDF alike. Manual wins until it's reset or the framing/photo changes (cleared above).
+  const contour = editedContour ?? autoContour;
+  // Contour editor: enter seeds an editable polygon from the current auto contour; reset re-seeds
+  // from auto (discarding manual edits); clear drops the override back to the pure auto contour.
+  const enterContourEdit = () => {
+    setEditedContour((prev) => prev ?? (autoContour.length >= 3 ? simplifyForEdit(autoContour) : null));
+    setFrameTool('contour');
+  };
+  const resetContour = () => setEditedContour(autoContour.length >= 3 ? simplifyForEdit(autoContour) : null);
+  const clearContour = () => {
+    setEditedContour(null);
+    setFrameTool((tl) => (tl === 'contour' ? 'none' : tl));
+  };
   const offsetContour = useMemo(() => {
     if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
     return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
@@ -326,6 +358,13 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
             onFrameTool={setFrameTool}
             onResetFraming={resetFraming}
             onRotate90={rotate90}
+            canEditContour={autoContour.length >= 3 || editedContour != null}
+            editingContour={frameTool === 'contour'}
+            hasManualContour={editedContour != null}
+            onEditContour={enterContourEdit}
+            onResetContour={resetContour}
+            onClearContour={clearContour}
+            onDoneContour={() => setFrameTool('none')}
           />
         </aside>
         <section className="relative min-h-0 p-4">
@@ -339,11 +378,14 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
               scaleMmPerPx={scaleMmPerPx}
               onUpload={(file) => {
                 reset();
+                setEditedContour(null);
                 setPhotoEpoch((e) => e + 1);
                 photo.setFile(file);
               }}
               onPaint={paint}
               tool={frameTool === 'none' ? 'brush' : frameTool}
+              editNodes={editedContour ?? undefined}
+              onEditNodes={setEditedContour}
               onStraighten={onStraighten}
               onCrop={onCrop}
               onCancelCrop={() => setFrameTool('none')}

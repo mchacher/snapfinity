@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { Check } from 'lucide-react';
 import type { PhotoAnalysis } from '../../vision/analyze';
 import type { BBox } from '../../vision/mask';
 import type { Point2D } from '../../core/offset';
+import { deleteNode, insertNode, moveNode, nearestNode, nearestSegment } from '../../core/contour';
 import {
   defaultCropBox,
   moveCropBox,
@@ -81,6 +88,109 @@ function drawRing(
   ctx.setLineDash([]);
 }
 
+const EDIT_STROKE = '#2f78d4';
+
+/**
+ * Editable-contour overlay (spec 035): a dimming veil so the photo recedes, plus the polygon and
+ * round node handles. Drag a node to move it, click a segment to insert one, double-click a node to
+ * delete it (≥ 3 kept). Coords are full-res image px via the SVG `viewBox`; a measured display scale
+ * keeps the handles + hit areas ~constant in screen px at any photo resolution. Drag updates a local
+ * copy (smooth) and commits to the parent on pointer-up.
+ */
+function ContourEditor({
+  width,
+  height,
+  nodes,
+  onChange,
+}: {
+  width: number;
+  height: number;
+  nodes: Point2D[];
+  onChange: (ring: Point2D[]) => void;
+}) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [drag, setDrag] = useState<{ idx: number; nodes: Point2D[] } | null>(null);
+  const [dispW, setDispW] = useState(0);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const update = () => setDispW(el.getBoundingClientRect().width);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const displayScale = dispW > 0 ? dispW / width : 1;
+  const nodeR = 7 / displayScale; // ~7 px on-screen handle radius, expressed in image px
+  const hitR = 14 / displayScale; // ~14 px on-screen grab radius
+  const view = drag ? drag.nodes : nodes;
+
+  const toImg = (clientX: number, clientY: number): Point2D => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    return [((clientX - rect.left) / rect.width) * width, ((clientY - rect.top) / rect.height) * height];
+  };
+  const onDown = (e: ReactPointerEvent<SVGSVGElement>) => {
+    svgRef.current?.setPointerCapture(e.pointerId);
+    const p = toImg(e.clientX, e.clientY);
+    const ni = nearestNode(nodes, p, hitR);
+    if (ni >= 0) {
+      setDrag({ idx: ni, nodes });
+      return;
+    }
+    const seg = nearestSegment(nodes, p, hitR);
+    if (seg) setDrag({ idx: seg.index + 1, nodes: insertNode(nodes, seg.index, seg.point) });
+  };
+  const onMove = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (!drag) return;
+    setDrag({ idx: drag.idx, nodes: moveNode(drag.nodes, drag.idx, toImg(e.clientX, e.clientY)) });
+  };
+  const onUp = () => {
+    if (!drag) return;
+    onChange(drag.nodes);
+    setDrag(null);
+  };
+  const onDouble = (e: ReactMouseEvent<SVGSVGElement>) => {
+    const p = toImg(e.clientX, e.clientY);
+    const ni = nearestNode(nodes, p, hitR);
+    if (ni >= 0) onChange(deleteNode(nodes, ni));
+  };
+
+  const d = view.length ? `M${view.map(([x, y]) => `${x},${y}`).join('L')}Z` : '';
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0 rounded-lg bg-white/55" />
+      <svg
+        ref={svgRef}
+        className="absolute inset-0 h-full w-full touch-none"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        style={{ cursor: 'crosshair' }}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerLeave={onUp}
+        onDoubleClick={onDouble}
+      >
+        <path d={d} fill="rgba(59,142,240,0.10)" stroke={EDIT_STROKE} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+        {view.map(([x, y], i) => (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={nodeR}
+            fill="#ffffff"
+            stroke={EDIT_STROKE}
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+      </svg>
+    </>
+  );
+}
+
 /**
  * Draw the analysed photo with the vision overlay: green tint on the isolated tool mask,
  * a cyan token circle, and the object's bounding box — the in-app equivalent of the
@@ -104,6 +214,8 @@ export function PhotoOverlay({
   brushSize = 24,
   brushErase = false,
   tool = 'brush',
+  editNodes,
+  onEditNodes,
   onStraighten,
   onCrop,
   onCancelCrop,
@@ -139,7 +251,11 @@ export function PhotoOverlay({
   brushSize?: number;
   brushErase?: boolean;
   /** Active interaction tool. */
-  tool?: 'brush' | 'straighten' | 'crop';
+  tool?: 'brush' | 'straighten' | 'crop' | 'contour';
+  /** Editable-contour nodes (full-res px) shown in `contour` mode. */
+  editNodes?: Point2D[];
+  /** Commit an edited node ring (move / insert / delete). */
+  onEditNodes?: (ring: Point2D[]) => void;
   /** Straighten gesture: two points (image px) along a line that should be level. */
   onStraighten?: (p1: Point2D, p2: Point2D) => void;
   /** Crop applied: two opposite corners (image px) of the kept region. */
@@ -225,10 +341,13 @@ export function PhotoOverlay({
       ctx.setLineDash([]);
     }
 
-    // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
-    drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
-    drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
-  }, [frameKey, width, height, token, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
+    // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent. Skipped
+    // while editing the contour — the editable overlay (ContourEditor) draws it instead.
+    if (tool !== 'contour') {
+      drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
+      drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
+    }
+  }, [frameKey, width, height, token, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast, tool]);
 
   const canPaint = tool === 'brush' && !!onPaint && !!mask;
   const straightening = tool === 'straighten';
@@ -385,6 +504,9 @@ export function PhotoOverlay({
         onPointerLeave={() => setCursor(null)}
       />
       {showGrid && width > 0 && height > 0 && <AlignmentGrid width={width} height={height} />}
+      {tool === 'contour' && editNodes && editNodes.length >= 3 && width > 0 && height > 0 && (
+        <ContourEditor width={width} height={height} nodes={editNodes} onChange={(ring) => onEditNodes?.(ring)} />
+      )}
       {canPaint && cursor && (
         <span
           className="pointer-events-none absolute rounded-full border-2"
