@@ -11,7 +11,27 @@ import { gridForFootprint } from '../../core/sizing';
 import { refineContour } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
+import { straightenAngleDeg, normaliseCrop, type CropRect } from '../../vision/photo-transform';
 import { useI18n } from '../../i18n';
+
+/** Fold an angle to (−180°, 180°] so repeated quarter-turns stay readable. */
+function normaliseAngle(deg: number): number {
+  return ((((deg + 180) % 360) + 360) % 360) - 180;
+}
+
+/** Compose a crop drawn on an already-cropped image back into the rotated image's space. */
+function composeCrop(outer: CropRect | null, inner: CropRect): CropRect {
+  if (!outer) return inner;
+  return {
+    x: outer.x + inner.x * outer.w,
+    y: outer.y + inner.y * outer.h,
+    w: inner.w * outer.w,
+    h: inner.h * outer.h,
+  };
+}
+
+/** Photo framing tool (Outline tab): brush (default) vs straighten vs crop. */
+export type FrameTool = 'none' | 'straighten' | 'crop';
 // Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
 import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
 import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
@@ -61,6 +81,10 @@ export interface Params {
   straightenEdges: boolean;
   /** How close to the axis an edge must be (degrees) to get straightened. */
   straightenToleranceDeg: number;
+  /** Photo framing: rotate the photo by this many degrees before analysis. */
+  straightenDeg: number;
+  /** Photo framing: crop to this normalised rect before analysis (null = full). */
+  cropRect: CropRect | null;
 }
 
 const initialParams: Params = {
@@ -89,12 +113,15 @@ const initialParams: Params = {
   notchOffsetYMm: 0,
   straightenEdges: false,
   straightenToleranceDeg: 8,
+  straightenDeg: 0,
+  cropRect: null,
 };
 
 export function Workspace() {
   const { t } = useI18n();
   const [params, setParams] = useState<Params>(initialParams);
   const [tab, setTab] = useState<'outline' | 'preview'>('outline');
+  const [frameTool, setFrameTool] = useState<FrameTool>('none');
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
@@ -102,7 +129,29 @@ export function Workspace() {
     flatten: params.flattenStrength,
     brightness: params.brightness,
     contrast: params.contrast,
+    straightenDeg: params.straightenDeg,
+    cropRect: params.cropRect,
   });
+
+  // Framing gestures (drawn on the current transformed photo, in its px space).
+  const onStraighten = (p1: Point2D, p2: Point2D) => {
+    // accumulate the rotation. The crop is KEPT: a fine straighten just rotates the content
+    // inside the cropped frame (the expected result), so it must not revert to the full photo.
+    setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + straightenAngleDeg(p1, p2)) }));
+    setFrameTool('none'); // the ruler is one-shot: it deactivates after setting the angle
+  };
+  /** Quarter-turn left (−90°) / right (+90°). A 90° re-frame swaps W/H, so it clears any crop. */
+  const rotate90 = (dir: -1 | 1) =>
+    setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + dir * 90), cropRect: null }));
+  const onCrop = (p1: Point2D, p2: Point2D) => {
+    const w = photo.result?.width ?? 0;
+    const h = photo.result?.height ?? 0;
+    if (w < 1 || h < 1) return;
+    const inner = normaliseCrop(p1, p2, w, h);
+    if (inner.w < 0.02 || inner.h < 0.02) return; // ignore tiny accidental drags
+    setParams((p) => ({ ...p, cropRect: composeCrop(p.cropRect, inner) }));
+  };
+  const resetFraming = () => setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
   const derived = useDerivedMask(photo.result, params.detectThreshold);
   const { editedMask, hasEdits, paint, reset } = useMaskEdit(
     derived,
@@ -221,7 +270,17 @@ export function Workspace() {
       />
       <main className="grid flex-1 overflow-hidden lg:grid-cols-[340px_1fr]">
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
-          <ControlsPanel params={params} set={set} tab={tab} onResetEdits={reset} hasEdits={hasEdits} />
+          <ControlsPanel
+            params={params}
+            set={set}
+            tab={tab}
+            onResetEdits={reset}
+            hasEdits={hasEdits}
+            frameTool={frameTool}
+            onFrameTool={setFrameTool}
+            onResetFraming={resetFraming}
+            onRotate90={rotate90}
+          />
         </aside>
         <section className="relative min-h-0 p-4">
           <div className={tab === 'outline' ? 'h-full' : 'hidden'}>
@@ -237,6 +296,9 @@ export function Workspace() {
                 photo.setFile(file);
               }}
               onPaint={paint}
+              tool={frameTool === 'none' ? 'brush' : frameTool}
+              onStraighten={onStraighten}
+              onCrop={onCrop}
             />
           </div>
           <div className={tab === 'preview' ? 'h-full' : 'hidden'}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
+import type { CropRect } from '../../vision/photo-transform';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
 
@@ -19,10 +20,14 @@ export function usePhotoAnalysis({
   flatten,
   brightness,
   contrast,
+  straightenDeg,
+  cropRect,
 }: {
   flatten: number;
   brightness: number;
   contrast: number;
+  straightenDeg: number;
+  cropRect: CropRect | null;
 }): PhotoAnalysisState {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<AnalysisStatus>('idle');
@@ -44,7 +49,7 @@ export function usePhotoAnalysis({
       void (async () => {
         try {
           const { analyzePhoto } = await import('../../vision/analyze');
-          const r = await analyzePhoto(file, { flatten, brightness, contrast });
+          const r = await analyzePhoto(file, { flatten, brightness, contrast, straightenDeg, cropRect });
           if (!cancelled) {
             setResult(r);
             setStatus('ready');
@@ -65,7 +70,7 @@ export function usePhotoAnalysis({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [file, flatten, brightness, contrast]);
+  }, [file, flatten, brightness, contrast, straightenDeg, cropRect]);
 
   return { status, result, setFile };
 }

@@ -1,6 +1,7 @@
 import cv from '@techstark/opencv-js';
-import type { Mat } from './cv';
-import { loadPhoto } from './image-source';
+import { loadOpenCv, type Mat } from './cv';
+import { loadPhoto, decodePhoto, transformPhoto, cvInputsFromImageData } from './image-source';
+import type { CropRect } from './photo-transform';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
 import { flattenRgba } from './flatten';
@@ -40,6 +41,10 @@ export interface AnalyzeOptions {
   brightness?: number;
   /** Pre-inference contrast (classic factor formula). */
   contrast?: number;
+  /** Framing: rotate the photo by this many degrees before analysis (0 = none). */
+  straightenDeg?: number;
+  /** Framing: crop to this normalised rect (of the rotated image) before analysis. */
+  cropRect?: CropRect | null;
 }
 
 let refPromise: Promise<Mat> | null = null;
@@ -63,33 +68,41 @@ function getRefContour(): Promise<Mat> {
  * object (u2netp), isolate the tool, and derive the auto grid size. Everything runs locally;
  * the photo never leaves the browser.
  */
-interface DecodeCache {
-  file: Blob;
+// The full-res file is decoded **once** (createImageBitmap + canvas + ImageData ≈ tens of MB) —
+// re-decoding on every change tripled peak memory and crashed the tab.
+let originalCache: { file: Blob; imageData: ImageData } | null = null;
+
+// The framing-dependent work (rotate/crop → gray → token + seg320) is cached by the framing, so
+// brightness/contrast changes reuse it (only adjustRgba + inference re-run), while a straighten /
+// crop change re-runs it. Token detection runs on the *framed* gray (it must reflect the crop).
+interface FramedCache {
+  key: string;
   imageData: ImageData;
   seg320: Uint8ClampedArray;
   width: number;
   height: number;
   det: ReturnType<typeof detectToken>;
 }
-
-// One decoded photo at a time. Re-running for a brightness/contrast change reuses this so we
-// don't re-decode the full-res image (Mat + canvas + ImageData ≈ tens of MB) every change —
-// that tripled peak memory and crashed the tab. Only adjustRgba(seg320) + inference re-run.
-let decodeCache: DecodeCache | null = null;
+let framedCache: { file: Blob; framed: FramedCache } | null = null;
 
 export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Promise<PhotoAnalysis> {
-  const { tokenOdMm = TOKEN_OD_MM, flatten = 0, brightness = 0, contrast = 0 } = options;
+  const { tokenOdMm = TOKEN_OD_MM, flatten = 0, brightness = 0, contrast = 0, straightenDeg = 0, cropRect = null } = options;
+  await loadOpenCv();
 
-  if (decodeCache?.file !== file) {
+  if (originalCache?.file !== file) {
+    originalCache = { file, imageData: await decodePhoto(file) };
+  }
+
+  const key = `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+  if (!framedCache || framedCache.file !== file || framedCache.framed.key !== key) {
     const ref = await getRefContour();
-    const { imageData, grayMat, seg320, width, height } = await loadPhoto(file);
-    // Token detection runs on the *original* gray (stable calibration, independent of the
-    // brightness/contrast a user dials in for segmentation).
+    const imageData = transformPhoto(originalCache.imageData, straightenDeg, cropRect);
+    const { grayMat, seg320, width, height } = cvInputsFromImageData(imageData);
     const det = detectToken(grayMat, ref, { tokenOdMm });
     grayMat.delete();
-    decodeCache = { file, imageData, seg320, width, height, det };
+    framedCache = { file, framed: { key, imageData, seg320, width, height, det } };
   }
-  const c = decodeCache;
+  const c = framedCache.framed;
 
   // Pre-process the model input only (tiny 320² buffer): flatten the background to kill soft
   // shadows, then the optional brightness/contrast. The displayed photo is left untouched

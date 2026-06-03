@@ -27,7 +27,8 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 020 | [grip-notches](../specs/020-grip-notches/) | ✅ Done | **Two-finger pinch grip** — a symmetric pair of vertical finger scoops at the object's edge (X/Y offsets); cut in the CAD worker (base bin cached for snappy moves). Iteration 13. |
 | 021 | [straighten-contour](../specs/021-straighten-contour/) | ✅ Done | **Straighten near-axis contour edges** — toggle + tolerance; snaps wobbly edges to the object's dominant axis (0°/90°), crisp corners (no rounding). Pure `core/contour` (`refineContour`/`rectifyStraightEdges`), flows into the pocket. Iteration 14. |
 | 022 | [publish-site](../specs/022-publish-site/) | ✅ Done | **Site publication** (host-agnostic): configurable Vite `base` (`BASE_PATH`), a **manual** GitHub Pages deploy workflow, README deploy docs (GH Pages + Cloudflare). Host choice deferred. Iteration 15. |
-| 023 | [token-threshold-sweep](../specs/023-token-threshold-sweep/) | In review | **Robust token detection**: sweep several dark cuts and keep the best match → a shadow under the token no longer distorts it (auto, no slider). Dataset oracle: 37/37, worst score 0.36 → 0.11. Iteration 16. |
+| 023 | [token-threshold-sweep](../specs/023-token-threshold-sweep/) | ✅ Done | **Robust token detection**: sweep several dark cuts and keep the best match → a shadow under the token no longer distorts it (auto, no slider). Dataset oracle: 37/37, worst score 0.36 → 0.11. Iteration 16. |
+| 024 | [photo-framing](../specs/024-photo-framing/) | In review | **Photo framing**: **straighten** (draw a 2-point line → photo rotates, snaps H/V) + **crop** (drag a rectangle), applied before analysis so token/scale/contour/3D/PDF re-derive. Decode-once cache; pure transform math unit-tested. Iteration 17. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

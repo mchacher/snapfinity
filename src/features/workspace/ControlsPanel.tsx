@@ -1,3 +1,4 @@
+import { Ruler } from 'lucide-react';
 import { Section } from '../../ui/Section';
 import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
@@ -5,7 +6,7 @@ import { NumberField } from '../../ui/NumberField';
 import { Toggle } from '../../ui/Toggle';
 import { Tabs } from '../../ui/Tabs';
 import { useI18n } from '../../i18n';
-import type { Params } from './Workspace';
+import type { Params, FrameTool } from './Workspace';
 
 const BASE_HEIGHT_MM = 4.75;
 const TOP_RISE_MM = 3.38;
@@ -17,10 +18,16 @@ interface Props {
   tab: 'outline' | 'preview';
   onResetEdits: () => void;
   hasEdits: boolean;
+  /** Active photo framing tool + setters. */
+  frameTool: FrameTool;
+  onFrameTool: (tool: FrameTool) => void;
+  onResetFraming: () => void;
+  /** Quarter-turn the photo (−90° left / +90° right). */
+  onRotate90: (dir: -1 | 1) => void;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
-export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Props) {
+export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameTool, onFrameTool, onResetFraming, onRotate90 }: Props) {
   const { t } = useI18n();
 
   if (tab === 'outline') {
@@ -35,6 +42,67 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
             min={1}
             step={0.1}
           />
+        </Section>
+        <Section title={t('params.framing')}>
+          <div className="flex items-center gap-3 py-1.5">
+            <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.rotate')}</span>
+            <div className="flex flex-1 gap-1.5">
+              <button
+                type="button"
+                onClick={() => onRotate90(-1)}
+                className="flex-1 rounded-lg border border-slate-200 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                ↺ 90°
+              </button>
+              <button
+                type="button"
+                onClick={() => onRotate90(1)}
+                className="flex-1 rounded-lg border border-slate-200 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                ↻ 90°
+              </button>
+            </div>
+          </div>
+          <Toggle
+            label={t('params.cropTool')}
+            checked={frameTool === 'crop'}
+            onChange={(on) => onFrameTool(on ? 'crop' : 'none')}
+          />
+          {frameTool === 'crop' && <p className="text-xs text-slate-400">{t('params.cropHint')}</p>}
+          <NumberField
+            label={t('params.angle')}
+            value={params.straightenDeg}
+            onChange={(v) => set('straightenDeg', v)}
+            unit="°"
+            min={-180}
+            max={180}
+            step={0.1}
+            action={
+              <button
+                type="button"
+                onClick={() => onFrameTool(frameTool === 'straighten' ? 'none' : 'straighten')}
+                title={t('params.straightenRule')}
+                aria-label={t('params.straightenRule')}
+                aria-pressed={frameTool === 'straighten'}
+                className={`rounded-md border p-1.5 transition-colors ${
+                  frameTool === 'straighten'
+                    ? 'border-accent-600 bg-accent-50 text-accent-700'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                <Ruler size={14} />
+              </button>
+            }
+          />
+          {frameTool === 'straighten' && <p className="text-xs text-slate-400">{t('params.straightenHint')}</p>}
+          <button
+            type="button"
+            onClick={onResetFraming}
+            disabled={params.straightenDeg === 0 && !params.cropRect}
+            className="mt-1 text-xs font-medium text-accent-700 hover:underline disabled:text-slate-300 disabled:no-underline"
+          >
+            {t('params.resetFraming')}
+          </button>
         </Section>
         <Section title={t('params.image')}>
           <Slider
