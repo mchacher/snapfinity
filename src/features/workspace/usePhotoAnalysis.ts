@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { framingKey, type DerivedMask, type FramedPhoto, type PhotoAnalysis } from '../../vision/analyze';
-import type { CropRect } from '../../vision/photo-transform';
+// IMPORTANT: only TYPE-import from `analyze` here. A value import (e.g. framingKey) pulls in
+// analyze.ts's static deps (opencv + onnxruntime-web) eagerly, which hangs vitest's module scan
+// and would re-bloat the entry chunk. framingKey/FramedPhoto live in the pure `photo-transform`.
+import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
+import { framingKey, type CropRect, type FramedPhoto } from '../../vision/photo-transform';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
 

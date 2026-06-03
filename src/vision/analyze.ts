@@ -1,7 +1,7 @@
 import cv from '@techstark/opencv-js';
 import { loadOpenCv, type Mat } from './cv';
 import { loadPhoto, decodePhoto, transformPhoto, cvInputsFromImageData } from './image-source';
-import type { CropRect } from './photo-transform';
+import { framingKey, type CropRect, type FramedPhoto } from './photo-transform';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
 import { flattenRgba } from './flatten';
@@ -33,17 +33,10 @@ export interface DerivedMask {
   outline: Point2D[];
 }
 
-/** The current (rotated/cropped) photo for display — produced fast, before the détourage. */
-export interface FramedPhoto {
-  imageData: ImageData;
-  width: number;
-  height: number;
-}
-
-/** Identifies a framing (rotation + crop) — used to cache framed work and detect a stale result. */
-export function framingKey(straightenDeg: number, cropRect: CropRect | null): string {
-  return `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
-}
+// `FramedPhoto` + `framingKey` now live in `./photo-transform` (pure, no WASM) — re-exported here
+// for callers that still reach for them via analyze.
+export type { FramedPhoto } from './photo-transform';
+export { framingKey } from './photo-transform';
 
 export interface AnalyzeOptions {
   tokenOdMm?: number;

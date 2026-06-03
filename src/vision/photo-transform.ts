@@ -8,6 +8,22 @@ export interface CropRect {
   h: number;
 }
 
+/**
+ * The current (rotated/cropped) photo for display — produced fast, before the détourage. Lives
+ * here (not in `analyze.ts`) so a consumer can value-import it WITHOUT pulling in analyze.ts's
+ * heavy static deps (opencv + onnxruntime-web), which hang vitest's module scan.
+ */
+export interface FramedPhoto {
+  imageData: ImageData;
+  width: number;
+  height: number;
+}
+
+/** Identifies a framing (rotation + crop) — used to cache framed work and detect a stale result. */
+export function framingKey(straightenDeg: number, cropRect: CropRect | null): string {
+  return `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+}
+
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 /**
