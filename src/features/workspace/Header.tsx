@@ -1,4 +1,5 @@
-import { Boxes, Download, Undo2, Redo2 } from 'lucide-react';
+import { Download, Undo2, Redo2 } from 'lucide-react';
+import { Logo } from '../../ui/Logo';
 import { Button } from '../../ui/Button';
 import { Tabs } from '../../ui/Tabs';
 import { useI18n, type Lang } from '../../i18n';
@@ -24,9 +25,7 @@ export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, on
   return (
     <header className="flex items-center border-b border-slate-200 bg-white px-4 py-2.5">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-600 text-white">
-          <Boxes size={16} />
-        </span>
+        <Logo size={28} className="text-accent-600" />
         <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
         <span className="hidden text-xs text-slate-400 sm:inline">· {t('app.tagline')}</span>
         <div className="ml-3 flex items-center gap-0.5">
