@@ -6,6 +6,7 @@ import {
   moveCropBox,
   normaliseCrop,
   resizeCropBox,
+  rotateCrop90,
   straightenAngleDeg,
   type CropRect,
 } from './photo-transform';
@@ -83,6 +84,35 @@ describe('resizeCropBox', () => {
 
   it('clamps the pointer to [0,1]', () => {
     expectBox(resizeCropBox(box, 'se', 5, 5), { x: 0.2, y: 0.2, w: 0.8, h: 0.8 });
+  });
+});
+
+describe('rotateCrop90', () => {
+  it('keeps null when there is no crop', () => {
+    expect(rotateCrop90(null, 1)).toBeNull();
+  });
+
+  it('turns the left half into the top half (+90° clockwise)', () => {
+    expectBox(rotateCrop90({ x: 0, y: 0, w: 0.5, h: 1 }, 1)!, { x: 0, y: 0, w: 1, h: 0.5 });
+  });
+
+  it('sends the top-left quadrant to the top-right (+90°) and bottom-left (−90°)', () => {
+    const tl: CropRect = { x: 0, y: 0, w: 0.5, h: 0.5 };
+    expectBox(rotateCrop90(tl, 1)!, { x: 0.5, y: 0, w: 0.5, h: 0.5 }); // CW → top-right
+    expectBox(rotateCrop90(tl, -1)!, { x: 0, y: 0.5, w: 0.5, h: 0.5 }); // CCW → bottom-left
+  });
+
+  it('round-trips +90 then −90 back to the original', () => {
+    const c: CropRect = { x: 0.2, y: 0.1, w: 0.5, h: 0.3 };
+    expectBox(rotateCrop90(rotateCrop90(c, 1), -1)!, c);
+    expectBox(rotateCrop90(rotateCrop90(c, -1), 1)!, c);
+  });
+
+  it('four +90° turns return to the original', () => {
+    const c: CropRect = { x: 0.2, y: 0.1, w: 0.5, h: 0.3 };
+    let r: CropRect | null = c;
+    for (let i = 0; i < 4; i += 1) r = rotateCrop90(r, 1);
+    expectBox(r!, c);
   });
 });
 

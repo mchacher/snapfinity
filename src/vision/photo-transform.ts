@@ -68,6 +68,20 @@ export function resizeCropBox(box: CropRect, handle: CropHandle, px: number, py:
   return { x: left, y: top, w: right - left, h: bottom - top };
 }
 
+/**
+ * Rotate a crop rect by a quarter-turn so it keeps selecting the same content when the photo is
+ * turned ±90°. `dir` matches `rotate90`: +1 = clockwise (+90°), −1 = counter-clockwise. Turning
+ * the image swaps width/height; this maps the (normalised) rect into the turned frame. Pure.
+ * `+90` then `−90` round-trips back to the original rect.
+ */
+export function rotateCrop90(crop: CropRect | null, dir: 1 | -1): CropRect | null {
+  if (!crop) return null;
+  const { x, y, w, h } = crop;
+  return dir === 1
+    ? { x: 1 - y - h, y: x, w: h, h: w } // +90° clockwise: (x,y) → (1−y, x)
+    : { x: y, y: 1 - x - w, w: h, h: w }; // −90° counter-clockwise: (x,y) → (y, 1−x)
+}
+
 /** Translate the zone by `(dx, dy)` (normalised), clamped so it stays fully inside [0,1]. Pure. */
 export function moveCropBox(box: CropRect, dx: number, dy: number): CropRect {
   return {

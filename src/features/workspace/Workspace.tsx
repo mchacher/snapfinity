@@ -12,7 +12,7 @@ import { gridForFootprint } from '../../core/sizing';
 import { refineContour } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
-import { straightenAngleDeg, normaliseCrop, type CropRect } from '../../vision/photo-transform';
+import { straightenAngleDeg, normaliseCrop, rotateCrop90, type CropRect } from '../../vision/photo-transform';
 import { useI18n } from '../../i18n';
 
 /** Fold an angle to (−180°, 180°] so repeated quarter-turns stay readable. */
@@ -142,9 +142,14 @@ export function Workspace() {
     setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + straightenAngleDeg(p1, p2)) }));
     setFrameTool('none'); // the ruler is one-shot: it deactivates after setting the angle
   };
-  /** Quarter-turn left (−90°) / right (+90°). A 90° re-frame swaps W/H, so it clears any crop. */
+  /** Quarter-turn left (−90°) / right (+90°). The crop is **kept**, turned with the photo so it
+   * still frames the same content (the 90° swap of W/H is handled by `rotateCrop90`). */
   const rotate90 = (dir: -1 | 1) =>
-    setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + dir * 90), cropRect: null }));
+    setParams((p) => ({
+      ...p,
+      straightenDeg: normaliseAngle(p.straightenDeg + dir * 90),
+      cropRect: rotateCrop90(p.cropRect, dir),
+    }));
   const onCrop = (p1: Point2D, p2: Point2D) => {
     // normalise against the *displayed* (framed) image — the gesture was drawn on it.
     const w = photo.framed?.width ?? 0;
