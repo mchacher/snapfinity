@@ -1,4 +1,4 @@
-import { Boxes, Download } from 'lucide-react';
+import { Boxes, Download, Undo2, Redo2 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Tabs } from '../../ui/Tabs';
 import { useI18n, type Lang } from '../../i18n';
@@ -11,9 +11,13 @@ interface Props {
   canExportPdf: boolean;
   tab: 'outline' | 'preview';
   onTabChange: (tab: 'outline' | 'preview') => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, onTabChange }: Props) {
+export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, onTabChange, onUndo, onRedo, canUndo, canRedo }: Props) {
   const { lang, setLang, t } = useI18n();
   const langs: Lang[] = ['fr', 'en'];
 
@@ -25,6 +29,28 @@ export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, on
         </span>
         <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
         <span className="hidden text-xs text-slate-400 sm:inline">· {t('app.tagline')}</span>
+        <div className="ml-3 flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onUndo}
+            disabled={!canUndo}
+            title={`${t('header.undo')} (⌘Z)`}
+            aria-label={t('header.undo')}
+            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent"
+          >
+            <Undo2 size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={onRedo}
+            disabled={!canRedo}
+            title={`${t('header.redo')} (⌘⇧Z)`}
+            aria-label={t('header.redo')}
+            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent"
+          >
+            <Redo2 size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1" />
