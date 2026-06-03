@@ -65,19 +65,28 @@ export function largestContour(gray: Mat): Mat {
 }
 
 /**
- * Detect the calibration token in a gray image by shape-matching against a reference token
- * contour (the token is a distinctive 6-fold star — matchShapes is robust to it, where a
- * "most circular" heuristic fails). Returns the calibration scale from the token diameter.
+ * Dark cuts swept by `detectToken`, strict → lenient (includes the original 100). A shadow
+ * under the near-black token is mid-gray, so it merges with the token at a lenient cut but drops
+ * out at a stricter one. The token's clean silhouette scores best at the cut that excludes the
+ * shadow, so sweeping and keeping the best match self-selects the right threshold per photo.
  */
-export function detectToken(gray: Mat, refContour: Mat, options: DetectOptions = {}): TokenDetection {
-  const { tokenOdMm = TOKEN_OD_MM, minAreaFraction = 0.002, maxScore = 0.7 } = options;
-  const thresh = thresholded(gray);
+const DARK_CUTS = [55, 70, 85, 100, 115];
+
+interface TokenCandidate {
+  score: number;
+  radius: number;
+  x: number;
+  y: number;
+}
+
+/** Best token-shaped external contour at a single dark cut (lowest matchShapes vs the ref). */
+function detectAtCut(gray: Mat, refContour: Mat, darkCut: number, minArea: number): TokenCandidate {
+  const thresh = thresholded(gray, darkCut);
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
   cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-  const minArea = gray.cols * gray.rows * minAreaFraction;
-  let best = { score: Infinity, radius: 0, x: 0, y: 0 };
+  let best: TokenCandidate = { score: Infinity, radius: 0, x: 0, y: 0 };
   for (let i = 0; i < contours.size(); i += 1) {
     const c = contours.get(i);
     if (cv.contourArea(c) >= minArea) {
@@ -92,6 +101,25 @@ export function detectToken(gray: Mat, refContour: Mat, options: DetectOptions =
   thresh.delete();
   contours.delete();
   hierarchy.delete();
+  return best;
+}
+
+/**
+ * Detect the calibration token in a gray image by shape-matching against a reference token
+ * contour (the token is a distinctive 6-fold star — matchShapes is robust to it, where a
+ * "most circular" heuristic fails). Sweeps several dark cuts and keeps the best match, so a
+ * shadow under the token (which merges with it at the default cut) no longer distorts the
+ * result. Returns the calibration scale from the token diameter.
+ */
+export function detectToken(gray: Mat, refContour: Mat, options: DetectOptions = {}): TokenDetection {
+  const { tokenOdMm = TOKEN_OD_MM, minAreaFraction = 0.002, maxScore = 0.7 } = options;
+  const minArea = gray.cols * gray.rows * minAreaFraction;
+
+  let best: TokenCandidate = { score: Infinity, radius: 0, x: 0, y: 0 };
+  for (const darkCut of DARK_CUTS) {
+    const cand = detectAtCut(gray, refContour, darkCut, minArea);
+    if (cand.score < best.score) best = cand;
+  }
 
   return {
     found: best.score <= maxScore && best.radius > 0,
