@@ -68,6 +68,8 @@ export interface Params {
   showMask: boolean;
   /** Green tint strength when shown, 0 … 1. */
   maskOpacity: number;
+  /** Show an alignment grid over the photo (framing aid, display-only). */
+  showGrid: boolean;
   includeLip: boolean;
   /** Calibration token outer diameter (mm) — measure the printed token for best accuracy. */
   tokenOdMm: number;
@@ -109,6 +111,7 @@ const initialParams: Params = {
   brushSize: 24,
   showMask: true,
   maskOpacity: 0.45,
+  showGrid: false,
   includeLip: true,
   tokenOdMm: 76.2,
   renderOpacity: 0.75,

@@ -109,6 +109,7 @@ export function OutlinePanel({
             contour={detourage ? contour : []}
             offsetContour={detourage ? offsetContour : []}
             maskOpacity={params.showMask ? params.maskOpacity : 0}
+            showGrid={params.showGrid}
             brightness={params.brightness}
             contrast={params.contrast}
             onPaint={(mx, my, mr) => onPaint(mx, my, mr, params.brushMode === 'erase' ? EDIT_ERASE : EDIT_ADD)}

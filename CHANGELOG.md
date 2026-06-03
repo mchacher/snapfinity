@@ -10,6 +10,11 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Added
+
+- An optional **alignment grid** over the 2D photo view (a framing aid to check the object and
+  token are square), toggled from **Affichage → Grille d'alignement**. Off by default; display-only.
+
 ### Changed
 
 - The landing page now shows on **every** visit (it's the product's front door); the workspace
