@@ -82,7 +82,7 @@ const initialParams: Params = {
   maskOpacity: 0.45,
   includeLip: true,
   tokenOdMm: 76.2,
-  renderOpacity: 1,
+  renderOpacity: 0.75,
   gripNotches: false,
   notchRadiusMm: 9,
   notchOffsetXMm: 0,
