@@ -45,6 +45,26 @@ npm run build   # production build → dist/
 UI come in later iterations as thin adapters around it. CI runs typecheck + lint + test +
 build on every push and PR.
 
+## Deploy
+
+Snapfinity is a static site — the build in `dist/` can be served from any static host. The
+base path is configurable: `BASE_PATH=/sub/ npm run build` for a project subpath, or the
+default `/` for a root domain. Runtime assets resolve via `import.meta.env.BASE_URL`, so a
+subpath just works. No COOP/COEP headers are needed (inference is single-threaded).
+
+**GitHub Pages** (manual deploy workflow included):
+
+1. Repo **Settings → Pages → Source → "GitHub Actions"** (one-time).
+2. **Actions → Deploy (GitHub Pages) → Run workflow.** It builds with `BASE_PATH=/snapfinity/`
+   and publishes. Result: `https://<user>.github.io/snapfinity/`.
+
+**Cloudflare Pages** (root domain):
+
+- Connect the repo; build command `npm run build`, output directory `dist`, env `BASE_PATH=/`.
+
+The deploy workflow is **manual-trigger only** for now; flip it to run on push once the host
+is settled.
+
 ## Status & roadmap
 
 Foundation + scaffold in place; product features are built iteration by iteration — see
