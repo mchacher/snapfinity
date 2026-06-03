@@ -30,7 +30,10 @@ ctx.onmessage = (event) => {
           fp && fp.length >= 3
             ? makeBinWithPocket(msg.binParams, fp, { depthMm: msg.depthMm })
             : makeBin(msg.binParams);
-        currentShape = cutGripNotches(shape, msg.binParams, msg.notch);
+        currentShape = cutGripNotches(shape, msg.binParams, msg.notch, {
+          footprint: fp,
+          depthMm: msg.depthMm,
+        });
         const { positions, normals, index } = meshToArrays(currentShape);
         ctx.postMessage({ type: 'built', id: msg.id, positions, normals, index }, [
           positions.buffer,

@@ -1,42 +1,66 @@
 import { makeCylinder, type Shape3D } from 'replicad';
 import { HEIGHT_UNIT_MM } from '../core/sizing';
 import { binDimensions, TOP_RISE, type BinParams } from './bin';
+import type { Point2D } from '../core/offset';
 import type { NotchConfig } from './cad-messages';
 
+export interface NotchContext {
+  /** Pocket footprint (mm, centred) — used to default the grips to the object's edge. */
+  footprint: Point2D[] | null;
+  /** Pocket depth (mm) — the vertical finger scoop matches it. */
+  depthMm: number;
+}
+
+/** Half-width / mid-depth of the object (mm), or a bin-based fallback when there's no pocket. */
+function objectEdge(footprint: Point2D[] | null, W: number): { edgeX: number; centerY: number } {
+  if (footprint && footprint.length >= 3) {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of footprint) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    return { edgeX: Math.max(maxX, -minX), centerY: (minY + maxY) / 2 };
+  }
+  return { edgeX: W / 4, centerY: 0 };
+}
+
 /**
- * Carve a **two-finger pinch grip**: one semicircular finger scoop on each of the two **longer
- * opposing walls**, facing each other, so you pinch the tool out from both sides (the classic
- * Gridfinity grip). Each scoop is a cylinder whose axis is perpendicular to its wall and centred
- * on the rim → a clean half-round cut; the outer envelope is preserved.
- *
- * Default position is centred along the length; `positionMm` slides the pinch along it. No-op
- * when disabled or when the wall is too short; the radius is clamped to stay above the feet.
+ * Carve a **two-finger pinch grip at the object's edge**: a symmetric pair of **vertical**
+ * (Z-axis) finger scoops cut down from the top, one on each side of the pocket, so a finger
+ * slides down beside the object to lift it out. They default to the object's left/right edge
+ * (mid-depth); the user nudges the pair symmetrically with X/Y offsets. The outer envelope is
+ * preserved. No-op when disabled.
  */
-export function cutGripNotches(bin: Shape3D, params: BinParams, notch: NotchConfig): Shape3D {
+export function cutGripNotches(bin: Shape3D, params: BinParams, notch: NotchConfig, ctx: NotchContext): Shape3D {
   if (!notch.enabled) return bin;
 
   const { width: W, depth: D } = binDimensions(params);
-  const rimZ = params.heightUnits * HEIGHT_UNIT_MM + TOP_RISE;
+  const topZ = params.heightUnits * HEIGHT_UNIT_MM; // pocket is cut from here
+  const rimZ = topZ + TOP_RISE;
+  const r = Math.max(3, Math.min(notch.radiusMm, W / 2 - 1, D / 2 - 1));
 
-  // Cut into the two longer opposing walls; the pinch slides along that long axis.
-  const longIsY = D >= W;
-  const wallLen = longIsY ? D : W; // length of the walls we cut into
-  const span = longIsY ? W : D; // distance between the two opposing walls
+  const { edgeX, centerY } = objectEdge(ctx.footprint, W);
 
-  const r = Math.max(3, Math.min(notch.radiusMm, rimZ - 2, wallLen / 2 - 4));
-  if (wallLen < 2 * r + 8) return bin; // too short to place a scoop sensibly
+  // Symmetric pair at (±cx, cy): default at the object edge + the user's X/Y offset, clamped so
+  // each scoop stays inside the bin's outer walls.
+  const cx = Math.max(0, Math.min(edgeX + notch.offsetXMm, W / 2 - r - 0.5));
+  const cy = Math.max(-(D / 2 - r - 0.5), Math.min(centerY + notch.offsetYMm, D / 2 - r - 0.5));
 
-  // Position along the long axis (0 = centred), clamped so the scoop stays on the wall.
-  const limit = Math.max(0, wallLen / 2 - r - 2);
-  const pos = Math.max(-limit, Math.min(notch.positionMm, limit));
-  const len = 2 * r + 4; // cylinder length: spans the outer face inward, carving the rim
+  // Vertical cut from clearly above the rim down to the pocket floor (a blind finger channel).
+  // The top must overshoot the rim by a healthy margin: a near-coincident top face against the
+  // lip profile makes the OpenCascade boolean fail and silently return the bin unchanged.
+  const floorZ = topZ - Math.min(ctx.depthMm, topZ - 1);
+  const topStart = rimZ + 5;
+  const height = topStart - floorZ;
 
   let out = bin;
-  for (const sign of [-1, 1]) {
-    // `sign` picks one of the two opposing walls; the scoop axis points inward.
-    const cutter = longIsY
-      ? makeCylinder(r, len, [sign * (span / 2 + len / 2), pos, rimZ], [-sign, 0, 0])
-      : makeCylinder(r, len, [pos, sign * (span / 2 + len / 2), rimZ], [0, -sign, 0]);
+  for (const sx of [1, -1]) {
+    const cutter = makeCylinder(r, height, [sx * cx, cy, topStart], [0, 0, -1]);
     out = out.cut(cutter);
   }
   return out;

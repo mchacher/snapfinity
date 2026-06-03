@@ -53,7 +53,8 @@ export const fr: Dict = {
     render: 'Rendu',
     grip: 'Encoches préhension',
     gripSize: 'Taille encoche',
-    gripPos: 'Position encoche',
+    gripX: 'Décalage X',
+    gripY: 'Décalage Y',
   },
   export: {
     title: 'Export',

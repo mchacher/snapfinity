@@ -51,7 +51,8 @@ export const en = {
     render: 'Render',
     grip: 'Grip notches',
     gripSize: 'Notch size',
-    gripPos: 'Grip position',
+    gripX: 'Grip X offset',
+    gripY: 'Grip Y offset',
   },
   export: {
     title: 'Export',

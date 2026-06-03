@@ -16,13 +16,15 @@ export interface MeshArrays {
 
 export type ExportFormat = 'stl' | 'step';
 
-/** Two-finger pinch-grip config (one scoop on each longer opposing wall, cut by the worker). */
+/** Vertical pinch-grip config: a symmetric pair of finger scoops at the object's edge. */
 export interface NotchConfig {
   enabled: boolean;
   /** Finger-scoop radius in mm. */
   radiusMm: number;
-  /** Position along the long axis, mm from centre (0 = centred). */
-  positionMm: number;
+  /** Symmetric X offset from the object edge, mm (widens/narrows the pair). */
+  offsetXMm: number;
+  /** Y offset along the depth, mm (0 = object mid-depth). */
+  offsetYMm: number;
 }
 
 /** main → worker. Each request carries an `id`; the reply echoes it. */

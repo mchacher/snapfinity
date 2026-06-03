@@ -1,52 +1,54 @@
-# Spec 020 — two-finger pinch grip (opposing wall scoops)
+# Spec 020 — two-finger pinch grip (vertical scoops at the object edge)
 
 ## Overview
 
-Backlog feature #3. Cut a **two-finger pinch grip**: one semicircular finger scoop on each of
-the two **longer opposing walls**, facing each other, so the user pinches the tool out from
-both sides — the classic Gridfinity grip (per the user's reference photo).
+Backlog feature #3. Cut a **two-finger pinch grip**: a **symmetric pair of vertical (Z-axis)
+finger scoops** cut down from the top **at the object's edge**, so a finger slides down beside
+the tool to lift it out. They default to the object's left/right edge (mid-depth); the user
+nudges the pair symmetrically with **X/Y offsets**.
 
-> Revised after review: v1 first cut both scoops on a single front wall, which looked
-> mis-placed on long/narrow bins. The correct design is **one scoop per longer opposing wall**,
-> centred along the length by default, with a **position** offset to slide the pinch.
+> Revised twice after review: (1) both scoops on one front wall looked mis-placed; (2) scoops on
+> the outer side walls were still wrong. The user clarified: the grips must be **at the object
+> edge (not the bin's side walls), cut along Z**, with **symmetric X/Y** fine-tuning.
 
 ## Goals
 
-- A toggle to add the pinch grip; a **size** (radius) control + a **position** control.
-- Correct default: scoops centred on the two longer walls, facing each other.
+- A toggle to add the pinch grip; **size** (radius) + **X offset** + **Y offset** controls.
+- Correct default: a symmetric pair at the object's ±X edge, mid-depth.
 - The bin's outer envelope (footprint + height) is unchanged — scoops are carved within it.
-- Works for both the plain bin and the pocketed bin, in the CAD worker.
+- Cut in the CAD worker after building the (pocketed) bin.
 
 ## Non-goals
 
-- More than two scoops, or scoops on the shorter walls. 
-- A full Gridfinity "scoop ramp" floor feature (this is a rim grip, not a bottom ramp).
+- More than two scoops; auto-snapping to a non-rectangular outline (bbox edge is the default).
+- A full Gridfinity "scoop ramp" floor feature.
 
 ## Requirements
 
-- **Toggle** `gripNotches` (default off) + a **radius** slider (default 9 mm) + a **position**
-  slider (`notchPositionMm`, default 0 = centred, ±100 mm, clamped to the wall).
-- One semicircular scoop cut into the **top rim of each longer opposing wall**, axis ⟂ the wall,
-  centred on the rim; the pair sits at `positionMm` along the long axis.
-- Geometry guards: skip if the wall is too short; clamp `r` so the scoop stays above the feet
-  and within the wall, and clamp `positionMm` so the scoop stays on the wall.
-- Applied in the **CAD worker** after building the bin (plain or pocketed); the outer
-  bounding box is preserved.
+- **Toggle** `gripNotches` (default off) + **radius** (default 9 mm) + **X offset**
+  (`notchOffsetXMm`) + **Y offset** (`notchOffsetYMm`), both default 0.
+- A symmetric pair of **vertical cylinders** (axis Z) cut from above the rim down to the pocket
+  floor, at `(±(edgeX + offsetX), centreY + offsetY)` where `edgeX`/`centreY` come from the
+  pocket footprint bbox (bin-based fallback when there's no pocket).
+- Geometry: the cut **overshoots the rim** (≥ 5 mm) so the boolean doesn't fail on a
+  near-coincident top face; clamp the centres so each scoop stays inside the outer walls.
+- Applied in the **CAD worker** after building the bin (with the footprint + depth as context);
+  the outer bounding box is preserved.
 
 ## Acceptance criteria
 
-- [x] Enabling adds two opposing finger scoops on the longer walls; disabling restores the plain bin. *(verified visually on a 2×6 bin)*
+- [x] Enabling adds two vertical finger scoops at the object's edge; disabling restores the bin. *(verified visually on a real photo — scissors)*
+- [x] X/Y offsets move the symmetric pair.
 - [x] Outer dimensions (W×D×H) are unchanged with the grip on.
-- [x] The grip bin still meshes + exports (STL/STEP).
-- [x] Unit test (Node OC): bbox preserved, meshable, position offset changes the shape. `build`/`lint`/`typecheck` clean.
+- [x] Unit test (Node OC): material removed, bbox preserved, X/Y offset changes the shape. `build`/`lint`/`typecheck` clean.
 
 ## Scope
 
-**In:** `src/cad/notches.ts` (`cutGripNotches`) + test; thread a `notch` config through the
-CAD worker (`cad-messages`, `cad.worker`, `cad-client`, `useBin`); `Params` + ControlsPanel
-toggle/slider; i18n.
+**In:** `src/cad/notches.ts` (`cutGripNotches` + `NotchContext`) + test; thread a `notch` config
+(+ footprint/depth context) through the CAD worker (`cad-messages`, `cad.worker`, `useBin`);
+`Params` + ControlsPanel toggle/size/X/Y sliders; i18n.
 
-**Out:** side/count selection, bottom scoop ramp.
+**Out:** outline-snapping, more scoops, bottom scoop ramp.
 
 ## Edge cases
 

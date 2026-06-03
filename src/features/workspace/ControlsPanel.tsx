@@ -215,11 +215,20 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
               unit="mm"
             />
             <Slider
-              label={t('params.gripPos')}
-              value={params.notchPositionMm}
-              onChange={(v) => set('notchPositionMm', v)}
-              min={-100}
-              max={100}
+              label={t('params.gripX')}
+              value={params.notchOffsetXMm}
+              onChange={(v) => set('notchOffsetXMm', v)}
+              min={-60}
+              max={60}
+              step={1}
+              unit="mm"
+            />
+            <Slider
+              label={t('params.gripY')}
+              value={params.notchOffsetYMm}
+              onChange={(v) => set('notchOffsetYMm', v)}
+              min={-120}
+              max={120}
               step={1}
               unit="mm"
             />
