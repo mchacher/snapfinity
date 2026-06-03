@@ -14,10 +14,20 @@ export default defineConfig({
     // Serve onnxruntime-web's WASM/glue assets flat under /ort/ (dev + build) so segmentation
     // runs fully offline — no CDN. `ort.env.wasm.wasmPaths` points here (see seg-runtime.ts).
     // `stripBase: true` flattens the node_modules path so files land directly in /ort/.
+    //
+    // We import `onnxruntime-web/webgpu` with `numThreads = 1`. Both execution providers we use
+    // (`webgpu` and the `wasm` fallback) load the **asyncify** build at runtime — verified by
+    // capturing the actual `/ort/` requests in both the WebGPU and no-WebGPU paths: each fetches
+    // only `ort-wasm-simd-threaded.asyncify.{wasm,mjs}`. Copying the whole `dist/*` also dragged in
+    // the jsep (25 MiB), jspi (14 MB) and plain-simd (13 MB) variants — dead weight that tripled
+    // `dist/`. Narrowing to the one build we load also drops the **25.02 MiB jsep file**, the only
+    // asset over Cloudflare Pages' 25 MiB per-file limit — so the deploy is Cloudflare-compatible
+    // too (the loaded asyncify file is 22.6 MiB). NB: re-verify this glob if onnxruntime-web is
+    // upgraded (a version bump can change which wasm build the webgpu entry pulls).
     viteStaticCopy({
       targets: [
         {
-          src: 'node_modules/onnxruntime-web/dist/*.{wasm,mjs}',
+          src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.{wasm,mjs}',
           dest: 'ort',
           rename: { stripBase: true },
         },

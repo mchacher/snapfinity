@@ -28,6 +28,19 @@ your device.
 - **Pitch** — Gridfinity grid spacing: **42 mm** (standard) or **36 mm**.
 - **Bin** — the generated box: Gridfinity base hollowed to the tool's footprint.
 
+## The calibration token
+
+Snapfinity needs a **calibration token** in the photo — a printed disc of known size that gives the
+scale (mm per pixel). You need the *exact* token it's tuned for:
+
+- **3D print it:** [`public/token/snapfinity-token.stl`](public/token/snapfinity-token.stl)
+  (editable source: [`.step`](public/token/snapfinity-token.step)) — a flat 76.2 mm disc with a
+  6-fold star of through-holes, ~2 mm thick. Any filament; no supports.
+- **Calibrate once:** printers shrink ~0.2–0.5 %. Measure your printed token's outer diameter with
+  calipers and enter it in the app (**Calibrage → Ø token**, default 76.2 mm) for best accuracy.
+- **Shoot it:** lay the object **and** the token flat on a plain, evenly-lit light background, shoot
+  from straight above.
+
 ## Tech stack
 
 All client-side: Vite · opencv.js · clipper · replicad (OpenCascade WASM) · three.js.
