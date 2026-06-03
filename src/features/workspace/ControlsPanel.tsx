@@ -63,19 +63,22 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
               </button>
             </div>
           </div>
-          <div className="py-1.5">
-            <button
-              type="button"
-              onClick={() => onFrameTool(frameTool === 'crop' ? 'none' : 'crop')}
-              aria-pressed={frameTool === 'crop'}
-              className={`flex w-full items-center justify-center gap-2 rounded-lg border py-1.5 text-sm transition-colors ${
-                frameTool === 'crop'
-                  ? 'border-accent-600 bg-accent-50 text-accent-700'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <Crop size={15} /> {t('params.cropTool')}
-            </button>
+          <div className="flex items-center gap-3 py-1.5">
+            <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.cropTool')}</span>
+            <div className="flex flex-1">
+              <button
+                type="button"
+                onClick={() => onFrameTool(frameTool === 'crop' ? 'none' : 'crop')}
+                aria-pressed={frameTool === 'crop'}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-1.5 text-sm transition-colors ${
+                  frameTool === 'crop'
+                    ? 'border-accent-600 bg-accent-50 text-accent-700'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Crop size={15} />
+              </button>
+            </div>
           </div>
           {frameTool === 'crop' && <p className="text-xs text-slate-400">{t('params.cropHint')}</p>}
           <NumberField
