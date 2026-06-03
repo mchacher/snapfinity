@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { OutlinePanel } from './OutlinePanel';
@@ -163,18 +163,28 @@ export function Workspace() {
 
   // Multi-step undo/redo over the params + the brush edits (see useUndoRedo).
   const history = useUndoRedo({ params, setParams, version, snapshot, restore, resetKey: photoEpoch });
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  // Standard shortcuts on macOS / Windows / Linux: ⌘/Ctrl+Z = undo, ⌘/Ctrl+⇧Z = redo, and
+  // Ctrl+Y = redo (the common Windows/Linux variant). Attached once; reads the latest via a ref.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+      if (!(e.metaKey || e.ctrlKey)) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      e.preventDefault();
-      if (e.shiftKey) history.redo();
-      else history.undo();
+      const key = e.key.toLowerCase();
+      if (key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) historyRef.current.redo();
+        else historyRef.current.undo();
+      } else if (key === 'y') {
+        e.preventDefault();
+        historyRef.current.redo();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [history]);
+  }, []);
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so
   // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
