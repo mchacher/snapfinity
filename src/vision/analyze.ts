@@ -2,6 +2,7 @@ import cv from '@techstark/opencv-js';
 import { loadOpenCv, type Mat } from './cv';
 import { loadPhoto, decodePhoto, transformPhoto, cvInputsFromImageData } from './image-source';
 import { framingKey, type CropRect, type FramedPhoto } from './photo-transform';
+import { edgeMask, chooseSegmentMode, type SegmentMode } from './edges';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
 import { flattenRgba } from './flatten';
@@ -158,7 +159,7 @@ const WORK_MAX = 1024;
  * to drive a live slider without churning full-res Mats. The mask is returned at the working
  * resolution; the outline + bbox are scaled back to full-res px. Requires opencv.js ready.
  */
-export function deriveMask(a: PhotoAnalysis, threshold: number): DerivedMask {
+export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMode = 'standard'): DerivedMask {
   const s = Math.min(1, WORK_MAX / Math.max(a.width, a.height));
   const ww = Math.max(1, Math.round(a.width * s));
   const wh = Math.max(1, Math.round(a.height * s));
@@ -167,14 +168,39 @@ export function deriveMask(a: PhotoAnalysis, threshold: number): DerivedMask {
       ? { centerPx: { x: a.token.centerPx.x * s, y: a.token.centerPx.y * s }, radiusPx: a.token.radiusPx * s }
       : null;
 
-  const mask320 = saliencyToMask(a.saliency, threshold);
-  const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
-  const maskWork = new cv.Mat();
-  cv.resize(maskSmall, maskWork, new cv.Size(ww, wh), 0, 0, cv.INTER_NEAREST);
-  cleanMask(maskWork, tokenCircle);
+  // The two candidate masks, each at the working resolution, cleaned (token-out + largest blob).
+  const buildU2netp = (): Mat => {
+    const mask320 = saliencyToMask(a.saliency, threshold);
+    const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
+    const m = new cv.Mat();
+    cv.resize(maskSmall, m, new cv.Size(ww, wh), 0, 0, cv.INTER_NEAREST);
+    maskSmall.delete();
+    cleanMask(m, tokenCircle);
+    return m;
+  };
+  const buildEdges = (): Mat => {
+    const m = edgeMask(a.imageData, ww, wh); // transparent/reflective objects u2netp misses
+    cleanMask(m, tokenCircle);
+    return m;
+  };
+
+  // Pick the source: forced (standard/edges) or Auto (only switch when u2netp clearly failed).
+  let maskWork: Mat;
+  if (mode === 'standard') {
+    maskWork = buildU2netp();
+  } else if (mode === 'edges') {
+    maskWork = buildEdges();
+  } else {
+    const u = buildU2netp();
+    const e = buildEdges();
+    const frame = ww * wh;
+    const pick = chooseSegmentMode(cv.countNonZero(u) / frame, cv.countNonZero(e) / frame);
+    maskWork = pick === 'edges' ? e : u;
+    (pick === 'edges' ? u : e).delete();
+  }
+
   const maskData = new Uint8Array(maskWork.data);
   const outlineWork = outerContour(maskWork); // may mutate maskWork — we're done reading it
-  maskSmall.delete();
   maskWork.delete();
 
   // scale the outline + bbox back up to full-res px (the mask stays at working resolution)
