@@ -31,6 +31,8 @@ export const en = {
     offset: 'Clearance',
     threshold: 'Threshold',
     smoothing: 'Smoothing',
+    straighten: 'Straighten edges',
+    straightenTol: 'Straighten tolerance',
     brush: 'Brush',
     brushAdd: 'Add',
     brushErase: 'Erase',

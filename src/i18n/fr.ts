@@ -33,6 +33,8 @@ export const fr: Dict = {
     offset: 'Jeu',
     threshold: 'Seuil',
     smoothing: 'Lissage',
+    straighten: 'Redresser les bords',
+    straightenTol: 'Tolérance redressement',
     brush: 'Pinceau',
     brushAdd: 'Ajouter',
     brushErase: 'Enlever',

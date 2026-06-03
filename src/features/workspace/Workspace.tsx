@@ -8,7 +8,7 @@ import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { useMaskEdit } from './useMaskEdit';
 import { binFilename, downloadBlob } from '../../cad/export';
 import { gridForFootprint } from '../../core/sizing';
-import { smoothContour } from '../../core/contour';
+import { refineContour } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
 import { useI18n } from '../../i18n';
@@ -57,6 +57,10 @@ export interface Params {
   notchOffsetXMm: number;
   /** Y offset along the depth, mm. */
   notchOffsetYMm: number;
+  /** Straighten near-axis contour edges (crisp, snapped to the object's dominant axis). */
+  straightenEdges: boolean;
+  /** How close to the axis an edge must be (degrees) to get straightened. */
+  straightenToleranceDeg: number;
 }
 
 const initialParams: Params = {
@@ -83,6 +87,8 @@ const initialParams: Params = {
   notchRadiusMm: 9,
   notchOffsetXMm: 0,
   notchOffsetYMm: 0,
+  straightenEdges: false,
+  straightenToleranceDeg: 8,
 };
 
 export function Workspace() {
@@ -113,8 +119,15 @@ export function Workspace() {
   // then the mm footprint that hollows the bin. One source of truth, shared by the overlay
   // (px) and the CAD pocket (mm).
   const contour = useMemo(
-    () => (editedMask ? smoothContour(editedMask.outline, params.smoothingFactor) : []),
-    [editedMask, params.smoothingFactor],
+    () =>
+      editedMask
+        ? refineContour(editedMask.outline, {
+            smoothingFactor: params.smoothingFactor,
+            straighten: params.straightenEdges,
+            straightenToleranceDeg: params.straightenToleranceDeg,
+          })
+        : [],
+    [editedMask, params.smoothingFactor, params.straightenEdges, params.straightenToleranceDeg],
   );
   const offsetContour = useMemo(() => {
     if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
