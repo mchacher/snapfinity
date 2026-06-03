@@ -13,7 +13,7 @@ const ref: Mat = largestContour(refGray);
 refGray.delete();
 
 const photos = readdirSync('dataset/raw')
-  .filter((f) => f.endsWith('.jpeg'))
+  .filter((f) => /\.jpe?g$/i.test(f))
   .sort()
   .map((f) => `dataset/raw/${f}`);
 
