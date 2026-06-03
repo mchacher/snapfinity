@@ -65,7 +65,8 @@ subpath just works. No COOP/COEP headers are needed (inference is single-threade
 - Connect the repo; build command `npm run build`, output directory `dist`, env `BASE_PATH=/`.
 
 The deploy workflow is **manual-trigger only** for now; flip it to run on push once the host
-is settled.
+is settled. For the host trade-offs (bandwidth, the Cloudflare 25 MiB per-file gotcha, deploy-size
+hygiene), see [docs/technical/hosting.md](docs/technical/hosting.md).
 
 ## Status & roadmap
 
