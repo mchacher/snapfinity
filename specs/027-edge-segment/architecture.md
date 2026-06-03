@@ -3,11 +3,12 @@
 ## Modules
 
 - **`src/vision/edges.ts`** (new):
-  - `edgeMask(imageData, ww, wh): Uint8Array` — opencv pipeline at the working resolution
-    (matFromImageData → resize to ww×wh → gray → GaussianBlur → Canny(30,90) → dilate(3) →
-    morphologyEx CLOSE(ellipse 25) → findContours → fill). Returns a 0/255 mask buffer (ww·wh).
-    Mirrors the validated `tools/cv/edge-proto.ts`. Requires opencv ready (so it lives in the
-    cv-importing layer, like `isolate`/`contour-cv`).
+  - `edgeMask(imageData, ww, wh): Mat` — opencv pipeline at the working resolution
+    (matFromImageData → resize → gray → **flatten illumination (divide-by-blur)** → GaussianBlur →
+    Canny(30,90) → dilate(3) → morphologyEx CLOSE(ellipse, scaled) → findContours → fill). The
+    flatten step kills **cast shadows** (low-frequency) before Canny so they don't get enclosed and
+    filled, while the object's high-frequency edges survive. Returns a filled `CV_8UC1` Mat (caller
+    cleans + deletes). Requires opencv ready (cv-importing layer, like `isolate`/`contour-cv`).
   - `chooseSegmentMode(u2netpFrac, edgeFrac): 'standard' | 'edges'` — **pure** (no cv), so it's
     unit-testable. The conservative rule (only switch when u2netp clearly failed AND the edge
     blob is object-sized) lives here with the threshold constants.
