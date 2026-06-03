@@ -105,4 +105,30 @@ export const fr: Dict = {
       right: 'Droite',
     },
   },
+  landing: {
+    badge: '100% dans ton navigateur · sans serveur',
+    title: 'Transforme une photo en bac Gridfinity sur-mesure',
+    subtitle:
+      'Photographie un objet à côté du jeton de calibrage. Snapfinity en déduit un bac Gridfinity avec une empreinte exactement à sa forme — prêt à imprimer en 3D.',
+    start: 'Commencer',
+    getToken: 'Imprimer le jeton',
+    howTitle: 'Comment ça marche',
+    step1Title: 'Photographie',
+    step1Body:
+      'Pose l’objet et le jeton à plat sur un fond clair et uni, bien éclairé, et prends la photo du dessus.',
+    step2Title: 'Détoure & calibre',
+    step2Body:
+      'Le jeton donne l’échelle et le contour de l’objet est détecté automatiquement — tout dans ton navigateur.',
+    step3Title: 'Génère & exporte',
+    step3Body: 'Un bac Gridfinity creusé à la forme de l’objet, prêt à exporter en STL ou STEP.',
+    tokenTitle: 'Il te faut le jeton de calibrage',
+    tokenBody:
+      'Un disque de 76,2 mm à imprimer en 3D — il donne l’échelle à Snapfinity, sans lui pas de calibrage. Imprime à 100%, puis mesure son diamètre et saisis-le dans l’app.',
+    tokenStl: 'Télécharger le STL',
+    tokenStep: 'Source STEP',
+    privacyTitle: 'Privé par conception',
+    privacyBody: 'Ta photo ne quitte jamais ton appareil — aucun envoi, aucun serveur, aucun traçage.',
+    openSource: 'Libre & open-source',
+    madeBy: 'par Marc Chachereau',
+  },
 };

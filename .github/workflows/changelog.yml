@@ -1,0 +1,40 @@
+name: Changelog
+
+# Release notes are mandatory: every PR must add an entry to CHANGELOG.md (under "## [Unreleased]").
+# A trivial PR can opt out with the `skip-changelog` label. The job always runs and always reports a
+# conclusion (so it can be a required status check); the `labeled`/`unlabeled` triggers re-run it when
+# the label is toggled.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: changelog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a CHANGELOG.md update (unless skip-changelog)
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+          SKIP: ${{ contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "::notice::'skip-changelog' label present — changelog check skipped."
+            exit 0
+          fi
+          git fetch --no-tags origin "$BASE"
+          CHANGED="$(git diff --name-only "origin/$BASE...HEAD")"
+          echo "Changed files:"; echo "$CHANGED"
+          if echo "$CHANGED" | grep -qx 'CHANGELOG.md'; then
+            echo "✓ CHANGELOG.md updated."
+          else
+            echo "::error::This PR does not update CHANGELOG.md. Add an entry under '## [Unreleased]', or apply the 'skip-changelog' label for a trivial change."
+            exit 1
+          fi
