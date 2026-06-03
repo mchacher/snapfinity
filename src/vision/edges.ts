@@ -24,15 +24,6 @@ export function edgeMask(imageData: ImageData, ww: number, wh: number): Mat {
   const gray = new cv.Mat();
   cv.cvtColor(small, gray, cv.COLOR_RGBA2GRAY);
   small.delete();
-
-  // Flatten illumination (divide-by-blur) so **cast shadows** don't produce edges that the close
-  // step would enclose and fill. A heavy blur estimates the low-frequency background (lighting +
-  // shadows); dividing normalises the shaded background toward white while the object's
-  // high-frequency edges survive — so we keep the object outline but lose the soft shadow rim.
-  const bg = new cv.Mat();
-  cv.GaussianBlur(gray, bg, new cv.Size(0, 0), Math.min(ww, wh) / 8);
-  cv.divide(gray, bg, gray, 255); // saturate(gray * 255 / bg)
-  bg.delete();
   cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
 
   const edges = new cv.Mat();
