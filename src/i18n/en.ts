@@ -1,6 +1,6 @@
 export const en = {
   app: { tagline: 'Photo → Gridfinity bin' },
-  header: { undo: 'Undo', redo: 'Redo' },
+  header: { undo: 'Undo', redo: 'Redo', home: 'Back to home' },
   tabs: { outline: 'Outline', preview: '3D preview' },
   photo: {
     title: 'Photo',

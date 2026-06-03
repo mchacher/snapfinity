@@ -122,7 +122,7 @@ const initialParams: Params = {
   cropRect: null,
 };
 
-export function Workspace() {
+export function Workspace({ onHome }: { onHome?: () => void }) {
   const { t } = useI18n();
   const [params, setParams] = useState<Params>(initialParams);
   const [tab, setTab] = useState<'outline' | 'preview'>('outline');
@@ -299,6 +299,7 @@ export function Workspace() {
   return (
     <div className="flex h-dvh flex-col bg-slate-50 text-slate-800">
       <Header
+        onHome={onHome}
         onExport={exportFile}
         canExport={status === 'ready'}
         onExportPdf={exportPdf}
