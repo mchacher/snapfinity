@@ -57,7 +57,16 @@ export const fr: Dict = {
     stl: 'STL',
     step: 'STEP',
     threemf: '3MF',
+    pdf: 'Plan PDF',
     hint: 'Aperçu live & export à la prochaine étape.',
+  },
+  plan: {
+    title: 'Snapfinity — plan 1:1',
+    print: 'Imprimer à 100% — désactiver « ajuster à la page »',
+    object: 'Objet',
+    pocket: 'Poche (jeu)',
+    ruler: "50 mm — contrôle d'échelle",
+    page: 'Page',
   },
   viewer: {
     placeholder: 'Aperçu 3D',

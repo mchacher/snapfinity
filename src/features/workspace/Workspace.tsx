@@ -9,8 +9,12 @@ import { useMaskEdit } from './useMaskEdit';
 import { binFilename, downloadBlob } from '../../cad/export';
 import { gridForFootprint } from '../../core/sizing';
 import { smoothContour } from '../../core/contour';
-import { offsetPolygon } from '../../core/offset';
+import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
+import { useI18n } from '../../i18n';
+// Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
+import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
+import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
 
 export interface Params {
   pitchMm: number;
@@ -70,6 +74,7 @@ const initialParams: Params = {
 };
 
 export function Workspace() {
+  const { t } = useI18n();
   const [params, setParams] = useState<Params>(initialParams);
   const [tab, setTab] = useState<'outline' | 'preview'>('outline');
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
@@ -138,11 +143,54 @@ export function Workspace() {
     if (blob) downloadBlob(blob, binFilename(params.cols, params.rows, format));
   };
 
+  // The 1:1 PDF plan needs the calibration scale (no token → no true scale → no 1:1) + a contour.
+  const canExportPdf = scaleMmPerPx !== null && contour.length >= 3;
+  const exportPdf = async () => {
+    if (scaleMmPerPx === null || contour.length < 3) return;
+    const toMm = (pts: Point2D[]): Point2D[] => pts.map(([x, y]) => [x * scaleMmPerPx, y * scaleMmPerPx]);
+    const objectMm = toMm(contour);
+    const pocketMm = offsetContour.length >= 3 ? toMm(offsetContour) : [];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of objectMm) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const dims = `${Math.round(maxX - minX)} × ${Math.round(maxY - minY)} mm`;
+    const { buildPlanPdf } = await import('../../pdf/plan');
+    const loadFont = (url: string) =>
+      fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((b) => new Uint8Array(b));
+    const [regular, bold] = await Promise.all([loadFont(interRegularUrl), loadFont(interBoldUrl)]);
+    const blob = await buildPlanPdf({
+      objectMm,
+      pocketMm,
+      fonts: { regular, bold },
+      labels: {
+        title: t('plan.title'),
+        dims,
+        print: t('plan.print'),
+        object: t('plan.object'),
+        pocket: t('plan.pocket'),
+        ruler: t('plan.ruler'),
+        pageWord: t('plan.page'),
+      },
+    });
+    downloadBlob(blob, 'snapfinity-plan-1-1.pdf');
+  };
+
   return (
     <div className="flex h-dvh flex-col bg-slate-50 text-slate-800">
       <Header
         onExport={exportFile}
         canExport={status === 'ready'}
+        onExportPdf={exportPdf}
+        canExportPdf={canExportPdf}
         tab={tab}
         onTabChange={setTab}
       />

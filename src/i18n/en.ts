@@ -55,7 +55,16 @@ export const en = {
     stl: 'STL',
     step: 'STEP',
     threemf: '3MF',
+    pdf: 'PDF plan',
     hint: 'Live preview & export coming next.',
+  },
+  plan: {
+    title: 'Snapfinity — 1:1 plan',
+    print: 'Print at 100% — disable "fit to page"',
+    object: 'Object',
+    pocket: 'Pocket (clearance)',
+    ruler: '50 mm — scale check',
+    page: 'Page',
   },
   viewer: {
     placeholder: '3D preview',
