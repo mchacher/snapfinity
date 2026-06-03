@@ -44,25 +44,29 @@ export function transformPhoto(src: ImageData, straightenDeg: number, cropRect: 
   srcCanvas.height = sh;
   srcCanvas.getContext('2d')?.putImageData(src, 0, 0);
 
+  // Size the rotated canvas to the rotated bounding box so nothing is clipped — works for small
+  // straightening angles AND quarter-turns (portrait ↔ landscape).
+  const rad = (straightenDeg * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  const bw = Math.max(1, Math.round(sw * cos + sh * sin));
+  const bh = Math.max(1, Math.round(sw * sin + sh * cos));
+
   const rot = document.createElement('canvas');
-  rot.width = sw;
-  rot.height = sh;
+  rot.width = bw;
+  rot.height = bh;
   const rctx = rot.getContext('2d');
   if (!rctx) throw new Error('2D canvas context unavailable');
   rctx.fillStyle = '#ffffff';
-  rctx.fillRect(0, 0, sw, sh);
-  if (straightenDeg !== 0) {
-    rctx.translate(sw / 2, sh / 2);
-    rctx.rotate((straightenDeg * Math.PI) / 180);
-    rctx.drawImage(srcCanvas, -sw / 2, -sh / 2);
-  } else {
-    rctx.drawImage(srcCanvas, 0, 0);
-  }
+  rctx.fillRect(0, 0, bw, bh);
+  rctx.translate(bw / 2, bh / 2);
+  rctx.rotate(rad);
+  rctx.drawImage(srcCanvas, -sw / 2, -sh / 2);
 
-  const cx = cropRect ? Math.round(cropRect.x * sw) : 0;
-  const cy = cropRect ? Math.round(cropRect.y * sh) : 0;
-  const cw = cropRect ? Math.max(1, Math.round(cropRect.w * sw)) : sw;
-  const ch = cropRect ? Math.max(1, Math.round(cropRect.h * sh)) : sh;
+  const cx = cropRect ? Math.round(cropRect.x * bw) : 0;
+  const cy = cropRect ? Math.round(cropRect.y * bh) : 0;
+  const cw = cropRect ? Math.max(1, Math.round(cropRect.w * bw)) : bw;
+  const ch = cropRect ? Math.max(1, Math.round(cropRect.h * bh)) : bh;
   return rctx.getImageData(cx, cy, cw, ch);
 }
 

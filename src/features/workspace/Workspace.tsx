@@ -14,6 +14,11 @@ import { contourToFootprintMm } from '../../core/footprint';
 import { straightenAngleDeg, normaliseCrop, type CropRect } from '../../vision/photo-transform';
 import { useI18n } from '../../i18n';
 
+/** Fold an angle to (−180°, 180°] so repeated quarter-turns stay readable. */
+function normaliseAngle(deg: number): number {
+  return ((((deg + 180) % 360) + 360) % 360) - 180;
+}
+
 /** Compose a crop drawn on an already-cropped image back into the rotated image's space. */
 function composeCrop(outer: CropRect | null, inner: CropRect): CropRect {
   if (!outer) return inner;
@@ -130,8 +135,12 @@ export function Workspace() {
 
   // Framing gestures (drawn on the current transformed photo, in its px space).
   const onStraighten = (p1: Point2D, p2: Point2D) =>
-    // accumulate the rotation; re-framing invalidates any crop, so clear it (straighten first).
-    setParams((p) => ({ ...p, straightenDeg: p.straightenDeg + straightenAngleDeg(p1, p2), cropRect: null }));
+    // accumulate the rotation. The crop is KEPT: a fine straighten just rotates the content
+    // inside the cropped frame (the expected result), so it must not revert to the full photo.
+    setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + straightenAngleDeg(p1, p2)) }));
+  /** Quarter-turn left (−90°) / right (+90°). A 90° re-frame swaps W/H, so it clears any crop. */
+  const rotate90 = (dir: -1 | 1) =>
+    setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + dir * 90), cropRect: null }));
   const onCrop = (p1: Point2D, p2: Point2D) => {
     const w = photo.result?.width ?? 0;
     const h = photo.result?.height ?? 0;
@@ -268,6 +277,7 @@ export function Workspace() {
             frameTool={frameTool}
             onFrameTool={setFrameTool}
             onResetFraming={resetFraming}
+            onRotate90={rotate90}
           />
         </aside>
         <section className="relative min-h-0 p-4">

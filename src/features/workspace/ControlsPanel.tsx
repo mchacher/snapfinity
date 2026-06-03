@@ -21,10 +21,12 @@ interface Props {
   frameTool: FrameTool;
   onFrameTool: (tool: FrameTool) => void;
   onResetFraming: () => void;
+  /** Quarter-turn the photo (−90° left / +90° right). */
+  onRotate90: (dir: -1 | 1) => void;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
-export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameTool, onFrameTool, onResetFraming }: Props) {
+export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameTool, onFrameTool, onResetFraming, onRotate90 }: Props) {
   const { t } = useI18n();
 
   if (tab === 'outline') {
@@ -41,36 +43,46 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
           />
         </Section>
         <Section title={t('params.framing')}>
-          <div className="mb-2 flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => onFrameTool(frameTool === 'straighten' ? 'none' : 'straighten')}
-              className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
-                frameTool === 'straighten'
-                  ? 'border-accent-600 bg-accent-50 text-accent-700'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {t('params.straightenPhoto')}
-            </button>
-            <button
-              type="button"
-              onClick={() => onFrameTool(frameTool === 'crop' ? 'none' : 'crop')}
-              className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
-                frameTool === 'crop'
-                  ? 'border-accent-600 bg-accent-50 text-accent-700'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {t('params.crop')}
-            </button>
+          <div className="flex items-center gap-3 py-1.5">
+            <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.rotate')}</span>
+            <div className="flex flex-1 gap-1.5">
+              <button
+                type="button"
+                onClick={() => onRotate90(-1)}
+                className="flex-1 rounded-lg border border-slate-200 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                ↺ 90°
+              </button>
+              <button
+                type="button"
+                onClick={() => onRotate90(1)}
+                className="flex-1 rounded-lg border border-slate-200 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                ↻ 90°
+              </button>
+            </div>
           </div>
-          {frameTool === 'straighten' && <p className="mb-1 text-xs text-slate-400">{t('params.straightenHint')}</p>}
-          {frameTool === 'crop' && <p className="mb-1 text-xs text-slate-400">{t('params.cropHint')}</p>}
-          <div className="flex items-center justify-between py-1 text-sm">
-            <span className="text-slate-600">{t('params.angle')}</span>
-            <span className="font-mono text-slate-800">{params.straightenDeg.toFixed(1)}°</span>
-          </div>
+          <Toggle
+            label={t('params.cropTool')}
+            checked={frameTool === 'crop'}
+            onChange={(on) => onFrameTool(on ? 'crop' : 'none')}
+          />
+          {frameTool === 'crop' && <p className="text-xs text-slate-400">{t('params.cropHint')}</p>}
+          <NumberField
+            label={t('params.angle')}
+            value={params.straightenDeg}
+            onChange={(v) => set('straightenDeg', v)}
+            unit="°"
+            min={-180}
+            max={180}
+            step={0.1}
+          />
+          <Toggle
+            label={t('params.straightenRule')}
+            checked={frameTool === 'straighten'}
+            onChange={(on) => onFrameTool(on ? 'straighten' : 'none')}
+          />
+          {frameTool === 'straighten' && <p className="text-xs text-slate-400">{t('params.straightenHint')}</p>}
           <button
             type="button"
             onClick={onResetFraming}
