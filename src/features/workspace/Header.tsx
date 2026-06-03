@@ -38,6 +38,7 @@ export function Header({ onHome, onExport, canExport, onExportPdf, canExportPdf,
           <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
         </button>
         <span className="hidden text-xs text-slate-400 sm:inline">· {t('app.tagline')}</span>
+        <span className="hidden font-mono text-[10px] text-slate-300 sm:inline">v{__APP_VERSION__}</span>
         <div className="ml-3 flex items-center gap-0.5">
           <button
             type="button"
