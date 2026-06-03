@@ -6,6 +6,7 @@ import { Viewer } from './Viewer';
 import { useBin } from './useBin';
 import { usePhotoAnalysis, useDerivedMask } from './usePhotoAnalysis';
 import { useMaskEdit } from './useMaskEdit';
+import { useUndoRedo } from './useUndoRedo';
 import { binFilename, downloadBlob } from '../../cad/export';
 import { gridForFootprint } from '../../core/sizing';
 import { refineContour } from '../../core/contour';
@@ -122,6 +123,7 @@ export function Workspace() {
   const [params, setParams] = useState<Params>(initialParams);
   const [tab, setTab] = useState<'outline' | 'preview'>('outline');
   const [frameTool, setFrameTool] = useState<FrameTool>('none');
+  const [photoEpoch, setPhotoEpoch] = useState(0); // bumps per new photo → resets undo history
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
@@ -153,11 +155,26 @@ export function Workspace() {
   };
   const resetFraming = () => setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
   const derived = useDerivedMask(photo.result, params.detectThreshold);
-  const { editedMask, hasEdits, paint, reset } = useMaskEdit(
+  const { editedMask, hasEdits, paint, reset, version, snapshot, restore } = useMaskEdit(
     derived,
     photo.result?.width ?? 0,
     photo.result?.height ?? 0,
   );
+
+  // Multi-step undo/redo over the params + the brush edits (see useUndoRedo).
+  const history = useUndoRedo({ params, setParams, version, snapshot, restore, resetKey: photoEpoch });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      e.preventDefault();
+      if (e.shiftKey) history.redo();
+      else history.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [history]);
 
   // Calibration scale, recomputed from the detected token radius + the OD setting — so
   // changing the OD (or pitch) re-derives the size without re-running the vision pipeline.
@@ -267,6 +284,10 @@ export function Workspace() {
         canExportPdf={canExportPdf}
         tab={tab}
         onTabChange={setTab}
+        onUndo={history.undo}
+        onRedo={history.redo}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
       />
       <main className="grid flex-1 overflow-hidden lg:grid-cols-[340px_1fr]">
         <aside className="overflow-y-auto border-r border-slate-200 bg-white">
@@ -293,6 +314,7 @@ export function Workspace() {
               scaleMmPerPx={scaleMmPerPx}
               onUpload={(file) => {
                 reset();
+                setPhotoEpoch((e) => e + 1);
                 photo.setFile(file);
               }}
               onPaint={paint}

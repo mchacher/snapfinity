@@ -9,6 +9,12 @@ export interface MaskEdit {
   /** Paint a disc (mask-space coords + radius) — value from mask-edit (ADD / ERASE). */
   paint: (maskX: number, maskY: number, maskRadius: number, value: number) => void;
   reset: () => void;
+  /** Bumps on every paint/reset/restore — the change signal for undo/redo. */
+  version: number;
+  /** A copy of the current edit layer (or null when there are no edits) — for an undo snapshot. */
+  snapshot: () => Uint8Array | null;
+  /** Replace the edit layer from a snapshot (copies it) — used by undo/redo. */
+  restore: (layer: Uint8Array | null) => void;
 }
 
 /**
@@ -44,6 +50,16 @@ export function useMaskEdit(base: DerivedMask | null, fullW: number, fullH: numb
     [w, h],
   );
 
+  const snapshot = useCallback((): Uint8Array | null => {
+    return layerRef.current ? new Uint8Array(layerRef.current) : null;
+  }, []);
+
+  const restore = useCallback((layer: Uint8Array | null) => {
+    layerRef.current = layer ? new Uint8Array(layer) : null;
+    setHasEdits(!!layer);
+    setVersion((v) => v + 1);
+  }, []);
+
   useEffect(() => {
     if (!base) {
       setEdited(null);
@@ -75,5 +91,5 @@ export function useMaskEdit(base: DerivedMask | null, fullW: number, fullH: numb
     };
   }, [base, hasEdits, version, fullW, fullH]);
 
-  return { editedMask: edited, hasEdits, paint, reset };
+  return { editedMask: edited, hasEdits, paint, reset, version, snapshot, restore };
 }
