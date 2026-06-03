@@ -30,6 +30,36 @@ const CROP_HANDLES: { id: CropHandle; fx: number; fy: number; cursor: string }[]
 const HANDLE_HIT = 16;
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
+/** ~Square-cell count across the short side of the alignment grid. */
+const GRID_DIVISIONS = 10;
+
+/**
+ * Optional alignment grid over the photo (framing aid). An SVG sized to the canvas rect via
+ * `viewBox` in image px + `preserveAspectRatio="none"` — since the canvas preserves the image
+ * aspect, cells of equal user units stay square on screen. `non-scaling-stroke` keeps the lines
+ * ~1 px at any display size. Display-only; `pointer-events-none` so it never blocks gestures.
+ */
+function AlignmentGrid({ width, height }: { width: number; height: number }) {
+  const cell = Math.max(8, Math.round(Math.min(width, height) / GRID_DIVISIONS));
+  const lines: { key: string; x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (let x = cell; x < width; x += cell) lines.push({ key: `v${x}`, x1: x, y1: 0, x2: x, y2: height });
+  for (let y = cell; y < height; y += cell) lines.push({ key: `h${y}`, x1: 0, y1: y, x2: width, y2: y });
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden rounded-lg"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <g stroke="#94a3b8" strokeWidth={1} strokeOpacity={0.6}>
+        {lines.map((l) => (
+          <line key={l.key} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} vectorEffect="non-scaling-stroke" />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 /** Stroke a closed ring of full-res points, scaled to the canvas. */
 function drawRing(
   ctx: CanvasRenderingContext2D,
@@ -67,6 +97,7 @@ export function PhotoOverlay({
   contour = [],
   offsetContour = [],
   maskOpacity = 0.45,
+  showGrid = false,
   brightness = 0,
   contrast = 0,
   onPaint,
@@ -98,6 +129,8 @@ export function PhotoOverlay({
   offsetContour?: Point2D[];
   /** Green mask tint strength, 0 (off) … 1 (opaque). */
   maskOpacity?: number;
+  /** Show an alignment grid over the photo (framing aid, display-only). */
+  showGrid?: boolean;
   /** Display brightness/contrast — mirrors what u2netp saw (applied at canvas resolution). */
   brightness?: number;
   contrast?: number;
@@ -351,6 +384,7 @@ export function PhotoOverlay({
         onPointerUp={active ? onUp : undefined}
         onPointerLeave={() => setCursor(null)}
       />
+      {showGrid && width > 0 && height > 0 && <AlignmentGrid width={width} height={height} />}
       {canPaint && cursor && (
         <span
           className="pointer-events-none absolute rounded-full border-2"

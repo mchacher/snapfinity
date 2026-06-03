@@ -156,6 +156,7 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
               step={0.05}
             />
           )}
+          <Toggle label={t('params.grid')} checked={params.showGrid} onChange={(v) => set('showGrid', v)} />
         </Section>
         <Section title={t('tabs.outline')}>
           <div className="mb-3">

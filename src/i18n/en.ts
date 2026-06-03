@@ -57,6 +57,7 @@ export const en = {
     display: 'Display',
     maskShow: 'Green mask',
     opacity: 'Opacity',
+    grid: 'Alignment grid',
     image: 'Image',
     flatten: 'Flatten background',
     brightness: 'Brightness',

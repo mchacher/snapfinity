@@ -59,6 +59,7 @@ export const fr: Dict = {
     display: 'Affichage',
     maskShow: 'Masque vert',
     opacity: 'Opacité',
+    grid: "Grille d'alignement",
     image: 'Image',
     flatten: 'Aplatir le fond',
     brightness: 'Luminosité',
