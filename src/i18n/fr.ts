@@ -12,7 +12,7 @@ export const fr: Dict = {
     detourage: 'Détourage…',
     error: "Échec de l'analyse",
     retry: 'Essaie une autre photo',
-    calibration: 'Calibration',
+    calibration: 'Calibrage',
     token: 'Token',
     tokenFound: 'détecté',
     tokenMissing: 'introuvable',
