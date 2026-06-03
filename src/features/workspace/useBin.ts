@@ -32,7 +32,7 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
   const built = useRef<{ sig: string; fp: Point2D[] | null } | null>(null);
 
   const hasPocket = !!footprintMm && footprintMm.length >= 3;
-  const sig = `${params.cols}|${params.rows}|${params.heightUnits}|${params.pitchMm}|${params.includeLip}|${params.thicknessMm}|${params.gripNotches}|${params.notchRadiusMm}`;
+  const sig = `${params.cols}|${params.rows}|${params.heightUnits}|${params.pitchMm}|${params.includeLip}|${params.thicknessMm}|${params.gripNotches}|${params.notchRadiusMm}|${params.notchPositionMm}`;
 
   useEffect(() => {
     if (!enabled) return;
@@ -53,6 +53,7 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
           const mesh = await buildBin(binParams, hasPocket ? footprintMm : null, params.thicknessMm, {
             enabled: params.gripNotches,
             radiusMm: params.notchRadiusMm,
+            positionMm: params.notchPositionMm,
           });
           if (!cancelled) {
             built.current = { sig, fp: footprintMm };
@@ -67,7 +68,7 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [enabled, sig, footprintMm, hasPocket, params.cols, params.rows, params.heightUnits, params.pitchMm, params.includeLip, params.thicknessMm, params.gripNotches, params.notchRadiusMm]);
+  }, [enabled, sig, footprintMm, hasPocket, params.cols, params.rows, params.heightUnits, params.pitchMm, params.includeLip, params.thicknessMm, params.gripNotches, params.notchRadiusMm, params.notchPositionMm]);
 
   const exportBin = useCallback(
     (format: ExportFormat): Promise<Blob | null> => exportBinViaWorker(format).catch(() => null),

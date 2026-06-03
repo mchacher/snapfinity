@@ -49,10 +49,12 @@ export interface Params {
   tokenOdMm: number;
   /** Preview render opacity, 0.2…1 (1 = opaque). Lower it to see the pocket through the walls. */
   renderOpacity: number;
-  /** Cut two finger scoops into the front-wall rim (grab the tool with two fingers). */
+  /** Two-finger pinch grip: a scoop on each longer opposing wall. */
   gripNotches: boolean;
   /** Finger-scoop radius in mm. */
   notchRadiusMm: number;
+  /** Pinch position along the long axis, mm from centre (0 = centred). */
+  notchPositionMm: number;
 }
 
 const initialParams: Params = {
@@ -77,6 +79,7 @@ const initialParams: Params = {
   renderOpacity: 1,
   gripNotches: false,
   notchRadiusMm: 9,
+  notchPositionMm: 0,
 };
 
 export function Workspace() {

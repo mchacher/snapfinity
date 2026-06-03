@@ -1,42 +1,44 @@
-# Spec 020 — side grip notches (two-finger)
+# Spec 020 — two-finger pinch grip (opposing wall scoops)
 
 ## Overview
 
-Backlog feature #3. Cut **two finger notches** into the rim of one wall so the user can slide
-**two fingers of the same hand** in to grab the tool out of the bin.
+Backlog feature #3. Cut a **two-finger pinch grip**: one semicircular finger scoop on each of
+the two **longer opposing walls**, facing each other, so the user pinches the tool out from
+both sides — the classic Gridfinity grip (per the user's reference photo).
 
-> Interpretation of the request ("deux encoches sur le côté des outils pour glisser deux doigts
-> de la même main"): two rounded scoops in the top rim of the **front** (long) wall, spaced for
-> two fingers. Side/count are fixed in v1 (front, 2) — configurability can come later. Flagged
-> for review.
+> Revised after review: v1 first cut both scoops on a single front wall, which looked
+> mis-placed on long/narrow bins. The correct design is **one scoop per longer opposing wall**,
+> centred along the length by default, with a **position** offset to slide the pinch.
 
 ## Goals
 
-- A toggle to add two finger scoops; a size control for the scoop radius.
-- The bin's outer envelope (footprint + height) is unchanged — notches are carved within it.
+- A toggle to add the pinch grip; a **size** (radius) control + a **position** control.
+- Correct default: scoops centred on the two longer walls, facing each other.
+- The bin's outer envelope (footprint + height) is unchanged — scoops are carved within it.
 - Works for both the plain bin and the pocketed bin, in the CAD worker.
 
 ## Non-goals
 
-- Choosing the side or the number of notches (v1: front, 2). 
+- More than two scoops, or scoops on the shorter walls. 
 - A full Gridfinity "scoop ramp" floor feature (this is a rim grip, not a bottom ramp).
 
 ## Requirements
 
-- **Toggle** `gripNotches` (default off) + a **radius** slider (default 9 mm).
-- Two semicircular scoops are cut into the **front wall's top rim**, centred, spaced for two
-  fingers (auto spacing ≈ `max(2·r+6, 28)` mm), each of radius `r`.
-- Geometry guards: skip if the wall is too short for two scoops at radius `r`; clamp `r` so the
-  scoop doesn't reach below the body into the feet.
+- **Toggle** `gripNotches` (default off) + a **radius** slider (default 9 mm) + a **position**
+  slider (`notchPositionMm`, default 0 = centred, ±100 mm, clamped to the wall).
+- One semicircular scoop cut into the **top rim of each longer opposing wall**, axis ⟂ the wall,
+  centred on the rim; the pair sits at `positionMm` along the long axis.
+- Geometry guards: skip if the wall is too short; clamp `r` so the scoop stays above the feet
+  and within the wall, and clamp `positionMm` so the scoop stays on the wall.
 - Applied in the **CAD worker** after building the bin (plain or pocketed); the outer
   bounding box is preserved.
 
 ## Acceptance criteria
 
-- [ ] Enabling adds two rounded finger notches on the front rim; disabling restores the plain bin. *(user to verify visually)*
-- [ ] Outer dimensions (W×D×H) are unchanged with notches on.
-- [ ] The notched bin still meshes + exports (STL/STEP).
-- [ ] Unit test (Node OC): notches preserve outer bbox + still meshable. `build`/`lint`/`typecheck` clean.
+- [x] Enabling adds two opposing finger scoops on the longer walls; disabling restores the plain bin. *(verified visually on a 2×6 bin)*
+- [x] Outer dimensions (W×D×H) are unchanged with the grip on.
+- [x] The grip bin still meshes + exports (STL/STEP).
+- [x] Unit test (Node OC): bbox preserved, meshable, position offset changes the shape. `build`/`lint`/`typecheck` clean.
 
 ## Scope
 

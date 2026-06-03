@@ -16,11 +16,13 @@ export interface MeshArrays {
 
 export type ExportFormat = 'stl' | 'step';
 
-/** Two-finger grip-notch config (cut into the front-wall rim by the worker). */
+/** Two-finger pinch-grip config (one scoop on each longer opposing wall, cut by the worker). */
 export interface NotchConfig {
   enabled: boolean;
   /** Finger-scoop radius in mm. */
   radiusMm: number;
+  /** Position along the long axis, mm from centre (0 = centred). */
+  positionMm: number;
 }
 
 /** main → worker. Each request carries an `id`; the reply echoes it. */
