@@ -25,6 +25,7 @@ interface Props {
   tool: 'brush' | 'straighten' | 'crop';
   onStraighten: (p1: Point2D, p2: Point2D) => void;
   onCrop: (p1: Point2D, p2: Point2D) => void;
+  onCancelCrop: () => void;
 }
 
 /**
@@ -44,6 +45,7 @@ export function OutlinePanel({
   tool,
   onStraighten,
   onCrop,
+  onCancelCrop,
 }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +103,7 @@ export function OutlinePanel({
             tool={tool}
             onStraighten={onStraighten}
             onCrop={onCrop}
+            onCancelCrop={onCancelCrop}
           />
         </div>
         {photo.status === 'analyzing' && <BusyOverlay label={t('photo.analyzing')} />}

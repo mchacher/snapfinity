@@ -152,6 +152,7 @@ export function Workspace() {
     const inner = normaliseCrop(p1, p2, w, h);
     if (inner.w < 0.02 || inner.h < 0.02) return; // ignore tiny accidental drags
     setParams((p) => ({ ...p, cropRect: composeCrop(p.cropRect, inner) }));
+    setFrameTool('none'); // crop is applied once → leave crop mode
   };
   const resetFraming = () => setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
   const derived = useDerivedMask(photo.result, params.detectThreshold);
@@ -331,6 +332,7 @@ export function Workspace() {
               tool={frameTool === 'none' ? 'brush' : frameTool}
               onStraighten={onStraighten}
               onCrop={onCrop}
+              onCancelCrop={() => setFrameTool('none')}
             />
           </div>
           <div className={tab === 'preview' ? 'h-full' : 'hidden'}>
