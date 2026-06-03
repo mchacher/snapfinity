@@ -14,6 +14,7 @@ context lives in `docs/` and `specs/`.
 | The incremental development plan (iterations)        | [docs/roadmap.md](docs/roadmap.md)                                    |
 | All features ever shipped, by spec                   | [docs/specs-index.md](docs/specs-index.md)                            |
 | Specific feature history / design                    | `specs/NNN-name/{spec,architecture,plan}.md`                          |
+| Where/how to host & deploy (and the Cloudflare gotcha) | [docs/technical/hosting.md](docs/technical/hosting.md)               |
 
 ## Project in one paragraph
 
