@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Point2D } from '../core/offset';
-import { normaliseCrop, straightenAngleDeg } from './photo-transform';
+import {
+  MIN_CROP,
+  defaultCropBox,
+  moveCropBox,
+  normaliseCrop,
+  resizeCropBox,
+  rotateCrop90,
+  straightenAngleDeg,
+  type CropRect,
+} from './photo-transform';
 
 describe('straightenAngleDeg', () => {
   it('leaves a horizontal line unchanged', () => {
@@ -37,5 +46,89 @@ describe('normaliseCrop', () => {
   it('clamps to the image bounds', () => {
     const r = normaliseCrop([-50, -50], [600, 700], 400, 500);
     expect(r).toEqual({ x: 0, y: 0, w: 1, h: 1 });
+  });
+});
+
+const expectBox = (r: CropRect, e: CropRect) => {
+  expect(r.x).toBeCloseTo(e.x, 6);
+  expect(r.y).toBeCloseTo(e.y, 6);
+  expect(r.w).toBeCloseTo(e.w, 6);
+  expect(r.h).toBeCloseTo(e.h, 6);
+};
+
+describe('defaultCropBox', () => {
+  it('is a centred inset rectangle', () => {
+    expectBox(defaultCropBox(0.1), { x: 0.1, y: 0.1, w: 0.8, h: 0.8 });
+  });
+});
+
+describe('resizeCropBox', () => {
+  const box: CropRect = { x: 0.2, y: 0.2, w: 0.6, h: 0.6 }; // edges at 0.2 / 0.8
+
+  it('moves only the edges its letters name', () => {
+    // SE corner → right + bottom follow, left/top stay
+    expectBox(resizeCropBox(box, 'se', 0.9, 0.7), { x: 0.2, y: 0.2, w: 0.7, h: 0.5 });
+    // E edge → only right moves
+    expectBox(resizeCropBox(box, 'e', 0.5, 0.99), { x: 0.2, y: 0.2, w: 0.3, h: 0.6 });
+    // N edge → only top moves
+    expectBox(resizeCropBox(box, 'n', 0.99, 0.35), { x: 0.2, y: 0.35, w: 0.6, h: 0.45 });
+    // NW corner → left + top follow
+    expectBox(resizeCropBox(box, 'nw', 0.1, 0.05), { x: 0.1, y: 0.05, w: 0.7, h: 0.75 });
+  });
+
+  it('enforces the minimum side (handle cannot cross its opposite edge)', () => {
+    const r = resizeCropBox(box, 'w', 0.95, 0.5); // drag left past the right edge
+    expect(r.x).toBeCloseTo(0.8 - MIN_CROP, 6);
+    expect(r.w).toBeCloseTo(MIN_CROP, 6);
+  });
+
+  it('clamps the pointer to [0,1]', () => {
+    expectBox(resizeCropBox(box, 'se', 5, 5), { x: 0.2, y: 0.2, w: 0.8, h: 0.8 });
+  });
+});
+
+describe('rotateCrop90', () => {
+  it('keeps null when there is no crop', () => {
+    expect(rotateCrop90(null, 1)).toBeNull();
+  });
+
+  it('turns the left half into the top half (+90° clockwise)', () => {
+    expectBox(rotateCrop90({ x: 0, y: 0, w: 0.5, h: 1 }, 1)!, { x: 0, y: 0, w: 1, h: 0.5 });
+  });
+
+  it('sends the top-left quadrant to the top-right (+90°) and bottom-left (−90°)', () => {
+    const tl: CropRect = { x: 0, y: 0, w: 0.5, h: 0.5 };
+    expectBox(rotateCrop90(tl, 1)!, { x: 0.5, y: 0, w: 0.5, h: 0.5 }); // CW → top-right
+    expectBox(rotateCrop90(tl, -1)!, { x: 0, y: 0.5, w: 0.5, h: 0.5 }); // CCW → bottom-left
+  });
+
+  it('round-trips +90 then −90 back to the original', () => {
+    const c: CropRect = { x: 0.2, y: 0.1, w: 0.5, h: 0.3 };
+    expectBox(rotateCrop90(rotateCrop90(c, 1), -1)!, c);
+    expectBox(rotateCrop90(rotateCrop90(c, -1), 1)!, c);
+  });
+
+  it('four +90° turns return to the original', () => {
+    const c: CropRect = { x: 0.2, y: 0.1, w: 0.5, h: 0.3 };
+    let r: CropRect | null = c;
+    for (let i = 0; i < 4; i += 1) r = rotateCrop90(r, 1);
+    expectBox(r!, c);
+  });
+});
+
+describe('moveCropBox', () => {
+  it('translates the zone', () => {
+    expectBox(moveCropBox({ x: 0.2, y: 0.2, w: 0.5, h: 0.5 }, 0.1, -0.1), {
+      x: 0.3,
+      y: 0.1,
+      w: 0.5,
+      h: 0.5,
+    });
+  });
+
+  it('keeps the zone inside the image', () => {
+    const box: CropRect = { x: 0.2, y: 0.2, w: 0.5, h: 0.5 };
+    expectBox(moveCropBox(box, 1, 1), { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }); // hits the far edge
+    expectBox(moveCropBox(box, -1, -1), { x: 0, y: 0, w: 0.5, h: 0.5 }); // hits the near edge
   });
 });

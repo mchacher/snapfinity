@@ -8,6 +8,22 @@ export interface CropRect {
   h: number;
 }
 
+/**
+ * The current (rotated/cropped) photo for display — produced fast, before the détourage. Lives
+ * here (not in `analyze.ts`) so a consumer can value-import it WITHOUT pulling in analyze.ts's
+ * heavy static deps (opencv + onnxruntime-web), which hang vitest's module scan.
+ */
+export interface FramedPhoto {
+  imageData: ImageData;
+  width: number;
+  height: number;
+}
+
+/** Identifies a framing (rotation + crop) — used to cache framed work and detect a stale result. */
+export function framingKey(straightenDeg: number, cropRect: CropRect | null): string {
+  return `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+}
+
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 /**
@@ -36,4 +52,58 @@ export function normaliseCrop(p1: Point2D, p2: Point2D, width: number, height: n
   const x2 = clamp01(Math.max(p1[0], p2[0]) / width);
   const y2 = clamp01(Math.max(p1[1], p2[1]) / height);
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+
+/** Smallest crop side, as a fraction of the image — keeps the zone non-degenerate. */
+export const MIN_CROP = 0.05;
+
+/** Which of the 8 resize handles: corners + edge midpoints. Letters say which edges follow. */
+export type CropHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+
+/** A centred inset crop zone (proposed immediately when the crop tool opens). Pure. */
+export function defaultCropBox(margin = 0.08): CropRect {
+  const m = clamp01(margin);
+  return { x: m, y: m, w: 1 - 2 * m, h: 1 - 2 * m };
+}
+
+/**
+ * Drag `handle` to the normalised pointer `(px, py)`: only the edge(s) the handle's letters name
+ * (`w`/`e`/`n`/`s`) move; the opposite edges stay. Enforces `MIN_CROP` and clamps to [0,1]. Pure.
+ */
+export function resizeCropBox(box: CropRect, handle: CropHandle, px: number, py: number): CropRect {
+  let left = box.x;
+  let right = box.x + box.w;
+  let top = box.y;
+  let bottom = box.y + box.h;
+  const cx = clamp01(px);
+  const cy = clamp01(py);
+  if (handle.includes('w')) left = Math.min(cx, right - MIN_CROP);
+  if (handle.includes('e')) right = Math.max(cx, left + MIN_CROP);
+  if (handle.includes('n')) top = Math.min(cy, bottom - MIN_CROP);
+  if (handle.includes('s')) bottom = Math.max(cy, top + MIN_CROP);
+  return { x: left, y: top, w: right - left, h: bottom - top };
+}
+
+/**
+ * Rotate a crop rect by a quarter-turn so it keeps selecting the same content when the photo is
+ * turned ±90°. `dir` matches `rotate90`: +1 = clockwise (+90°), −1 = counter-clockwise. Turning
+ * the image swaps width/height; this maps the (normalised) rect into the turned frame. Pure.
+ * `+90` then `−90` round-trips back to the original rect.
+ */
+export function rotateCrop90(crop: CropRect | null, dir: 1 | -1): CropRect | null {
+  if (!crop) return null;
+  const { x, y, w, h } = crop;
+  return dir === 1
+    ? { x: 1 - y - h, y: x, w: h, h: w } // +90° clockwise: (x,y) → (1−y, x)
+    : { x: y, y: 1 - x - w, w: h, h: w }; // −90° counter-clockwise: (x,y) → (y, 1−x)
+}
+
+/** Translate the zone by `(dx, dy)` (normalised), clamped so it stays fully inside [0,1]. Pure. */
+export function moveCropBox(box: CropRect, dx: number, dy: number): CropRect {
+  return {
+    x: Math.max(0, Math.min(1 - box.w, box.x + dx)),
+    y: Math.max(0, Math.min(1 - box.h, box.y + dy)),
+    w: box.w,
+    h: box.h,
+  };
 }

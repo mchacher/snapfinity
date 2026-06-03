@@ -1,20 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
+// IMPORTANT: only TYPE-import from `analyze` here. A value import (e.g. framingKey) pulls in
+// analyze.ts's static deps (opencv + onnxruntime-web) eagerly, which hangs vitest's module scan
+// and would re-bloat the entry chunk. framingKey/FramedPhoto live in the pure `photo-transform`.
 import type { DerivedMask, PhotoAnalysis } from '../../vision/analyze';
-import type { CropRect } from '../../vision/photo-transform';
+import { framingKey, type CropRect, type FramedPhoto } from '../../vision/photo-transform';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'error';
 
 export interface PhotoAnalysisState {
   status: AnalysisStatus;
   result: PhotoAnalysis | null;
+  /** The current (rotated/cropped) photo to display — updates immediately, before the détourage. */
+  framed: FramedPhoto | null;
+  /** Cheap identity of `framed` (the framing) — pass this (not the heavy ImageData) as a render
+   * trigger so the megabyte-sized buffer never goes through React's (dev-mode) reconciler. */
+  framedKey: string | null;
+  /** True while `result` reflects an older framing than what's shown (détourage catching up). */
+  framingPending: boolean;
   setFile: (file: File | null) => void;
 }
 
 /**
- * Run the in-browser vision pipeline on the current photo + brightness/contrast. The heavy
- * WASM (opencv.js + onnxruntime-web + u2netp) is dynamically imported on the first photo, so
- * it never lands in the entry chunk / blocks first paint. A new photo analyses immediately;
- * brightness/contrast changes re-run the inference **debounced** (they alter the model input).
+ * Run the in-browser vision pipeline on the current photo + brightness/contrast. It's split in
+ * two so a crop/straighten feels instant:
+ *  - **fast** — the rotated/cropped photo (`framed`) is produced from a cheap canvas transform and
+ *    shown right away (`framePhoto`, no opencv / inference);
+ *  - **slow** — the détourage (token + u2netp) runs after, debounced for adjustments, and updates
+ *    `result`. While it catches up to a new framing, `framingPending` is true so the (stale,
+ *    differently-framed) contour isn't drawn over the freshly cropped photo.
+ *
+ * The heavy WASM (opencv.js + onnxruntime-web + u2netp) is dynamically imported, so it never lands
+ * in the entry chunk / blocks first paint.
  */
 export function usePhotoAnalysis({
   flatten,
@@ -32,13 +48,46 @@ export function usePhotoAnalysis({
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<AnalysisStatus>('idle');
   const [result, setResult] = useState<PhotoAnalysis | null>(null);
+  const [framed, setFramed] = useState<FramedPhoto | null>(null);
+  const [framedKey, setFramedKey] = useState<string | null>(null);
+  const [resultKey, setResultKey] = useState<string | null>(null);
   const lastFile = useRef<File | null>(null);
 
+  const key = framingKey(straightenDeg, cropRect);
+
+  // FAST: show the rotated/cropped photo immediately (transform only — no inference). Re-runs only
+  // when the framing changes, so brightness/contrast don't churn it.
+  useEffect(() => {
+    if (!file) {
+      setFramed(null);
+      setFramedKey(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { framePhoto } = await import('../../vision/analyze');
+        const f = await framePhoto(file, { straightenDeg, cropRect });
+        if (!cancelled) {
+          setFramed(f);
+          setFramedKey(key);
+        }
+      } catch (err) {
+        console.error('photo framing failed', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [file, straightenDeg, cropRect, key]);
+
+  // SLOW: the full détourage (token + u2netp). Immediate on a new photo, debounced for adjustments.
   useEffect(() => {
     if (!file) {
       lastFile.current = null;
       setStatus('idle');
       setResult(null);
+      setResultKey(null);
       return;
     }
     const freshFile = lastFile.current !== file;
@@ -52,6 +101,7 @@ export function usePhotoAnalysis({
           const r = await analyzePhoto(file, { flatten, brightness, contrast, straightenDeg, cropRect });
           if (!cancelled) {
             setResult(r);
+            setResultKey(key);
             setStatus('ready');
           }
         } catch (err) {
@@ -70,9 +120,11 @@ export function usePhotoAnalysis({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [file, flatten, brightness, contrast, straightenDeg, cropRect]);
+  }, [file, flatten, brightness, contrast, straightenDeg, cropRect, key]);
 
-  return { status, result, setFile };
+  // The détourage is stale (don't draw it) while the result's framing trails what's displayed.
+  const framingPending = framed != null && framedKey !== resultKey;
+  return { status, result, framed, framedKey, framingPending, setFile };
 }
 
 /**

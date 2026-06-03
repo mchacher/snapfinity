@@ -25,6 +25,7 @@ interface Props {
   tool: 'brush' | 'straighten' | 'crop';
   onStraighten: (p1: Point2D, p2: Point2D) => void;
   onCrop: (p1: Point2D, p2: Point2D) => void;
+  onCancelCrop: () => void;
 }
 
 /**
@@ -44,9 +45,14 @@ export function OutlinePanel({
   tool,
   onStraighten,
   onCrop,
+  onCancelCrop,
 }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Hold the framed photo's pixels in a ref so the megabyte ImageData is passed to PhotoOverlay
+  // by reference, never through React props (a dev-mode reconcile of it froze the UI ~3 s/crop).
+  const imageRef = useRef<ImageData | null>(null);
+  imageRef.current = photo.framed?.imageData ?? null;
   const [dragging, setDragging] = useState(false);
 
   const openPicker = () => inputRef.current?.click();
@@ -64,13 +70,19 @@ export function OutlinePanel({
 
   const hidden = <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />;
 
-  if (photo.result) {
+  if (photo.framed) {
+    const framed = photo.framed;
+    // The détourage (mask/contour/token) is only drawn once it matches the displayed framing —
+    // while it catches up after a crop/straighten, we show the freshly framed photo on its own.
+    const detourage = !photo.framingPending;
     return (
       <div className="relative h-full">
         <div className="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center gap-2">
-          <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
-            {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
-          </Chip>
+          {photo.result && (
+            <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
+              {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
+            </Chip>
+          )}
           {scaleMmPerPx !== null && (
             <Chip tone="neutral">
               {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
@@ -87,11 +99,15 @@ export function OutlinePanel({
         </div>
         <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
           <PhotoOverlay
-            analysis={photo.result}
-            mask={derived?.mask ?? null}
-            bbox={derived?.objectBBoxPx ?? null}
-            contour={contour}
-            offsetContour={offsetContour}
+            imageRef={imageRef}
+            width={framed.width}
+            height={framed.height}
+            frameKey={photo.framedKey}
+            token={detourage ? (photo.result?.token ?? null) : null}
+            mask={detourage ? (derived?.mask ?? null) : null}
+            bbox={detourage ? (derived?.objectBBoxPx ?? null) : null}
+            contour={detourage ? contour : []}
+            offsetContour={detourage ? offsetContour : []}
             maskOpacity={params.showMask ? params.maskOpacity : 0}
             brightness={params.brightness}
             contrast={params.contrast}
@@ -101,9 +117,10 @@ export function OutlinePanel({
             tool={tool}
             onStraighten={onStraighten}
             onCrop={onCrop}
+            onCancelCrop={onCancelCrop}
           />
         </div>
-        {photo.status === 'analyzing' && <BusyOverlay label={t('photo.analyzing')} />}
+        {photo.status === 'analyzing' && <BusyOverlay label={t('photo.detourage')} />}
         {hidden}
       </div>
     );

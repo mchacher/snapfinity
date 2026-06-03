@@ -1,7 +1,7 @@
 import cv from '@techstark/opencv-js';
 import { loadOpenCv, type Mat } from './cv';
 import { loadPhoto, decodePhoto, transformPhoto, cvInputsFromImageData } from './image-source';
-import type { CropRect } from './photo-transform';
+import { framingKey, type CropRect, type FramedPhoto } from './photo-transform';
 import { TOKEN_OD_MM, detectToken, largestContour } from './token';
 import { SEG_SIZE, adjustRgba, saliencyToMask } from './segment';
 import { flattenRgba } from './flatten';
@@ -32,6 +32,11 @@ export interface DerivedMask {
   /** Outer contour of the tool (full-res px); `[]` when no object. */
   outline: Point2D[];
 }
+
+// `FramedPhoto` + `framingKey` now live in `./photo-transform` (pure, no WASM) — re-exported here
+// for callers that still reach for them via analyze.
+export type { FramedPhoto } from './photo-transform';
+export { framingKey } from './photo-transform';
 
 export interface AnalyzeOptions {
   tokenOdMm?: number;
@@ -93,7 +98,7 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
     originalCache = { file, imageData: await decodePhoto(file) };
   }
 
-  const key = `${straightenDeg}|${cropRect ? `${cropRect.x},${cropRect.y},${cropRect.w},${cropRect.h}` : 'none'}`;
+  const key = framingKey(straightenDeg, cropRect);
   if (!framedCache || framedCache.file !== file || framedCache.framed.key !== key) {
     const ref = await getRefContour();
     const imageData = transformPhoto(originalCache.imageData, straightenDeg, cropRect);
@@ -122,6 +127,24 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
       : { found: false },
     saliency,
   };
+}
+
+/**
+ * **Fast framing only**: decode (cached) + rotate/crop → the displayed pixels. No opencv, no
+ * token detection, no inference — so the cropped/straightened photo can be shown to the user
+ * immediately, *before* the heavy détourage (`analyzePhoto`) runs. Populates the decode cache
+ * that `analyzePhoto` then reuses.
+ */
+export async function framePhoto(
+  file: Blob,
+  options: { straightenDeg?: number; cropRect?: CropRect | null } = {},
+): Promise<FramedPhoto> {
+  const { straightenDeg = 0, cropRect = null } = options;
+  if (originalCache?.file !== file) {
+    originalCache = { file, imageData: await decodePhoto(file) };
+  }
+  const imageData = transformPhoto(originalCache.imageData, straightenDeg, cropRect);
+  return { imageData, width: imageData.width, height: imageData.height };
 }
 
 /** Cap the cleanup/contour working resolution — full-res cv ops are far too heavy to run live. */
