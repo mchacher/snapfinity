@@ -95,5 +95,14 @@ export const fr: Dict = {
     hint: 'Ton bac apparaîtra ici',
     loading: 'Génération…',
     error: 'Échec du rendu',
+    fit: 'Ajuster la vue',
+    face: {
+      top: 'Dessus',
+      bottom: 'Dessous',
+      front: 'Avant',
+      back: 'Arrière',
+      left: 'Gauche',
+      right: 'Droite',
+    },
   },
 };
