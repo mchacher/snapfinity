@@ -134,10 +134,12 @@ export function Workspace() {
   });
 
   // Framing gestures (drawn on the current transformed photo, in its px space).
-  const onStraighten = (p1: Point2D, p2: Point2D) =>
+  const onStraighten = (p1: Point2D, p2: Point2D) => {
     // accumulate the rotation. The crop is KEPT: a fine straighten just rotates the content
     // inside the cropped frame (the expected result), so it must not revert to the full photo.
     setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + straightenAngleDeg(p1, p2)) }));
+    setFrameTool('none'); // the ruler is one-shot: it deactivates after setting the angle
+  };
   /** Quarter-turn left (−90°) / right (+90°). A 90° re-frame swaps W/H, so it clears any crop. */
   const rotate90 = (dir: -1 | 1) =>
     setParams((p) => ({ ...p, straightenDeg: normaliseAngle(p.straightenDeg + dir * 90), cropRect: null }));

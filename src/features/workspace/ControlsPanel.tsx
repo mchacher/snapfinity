@@ -1,3 +1,4 @@
+import { Ruler } from 'lucide-react';
 import { Section } from '../../ui/Section';
 import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
@@ -76,11 +77,22 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
             min={-180}
             max={180}
             step={0.1}
-          />
-          <Toggle
-            label={t('params.straightenRule')}
-            checked={frameTool === 'straighten'}
-            onChange={(on) => onFrameTool(on ? 'straighten' : 'none')}
+            action={
+              <button
+                type="button"
+                onClick={() => onFrameTool(frameTool === 'straighten' ? 'none' : 'straighten')}
+                title={t('params.straightenRule')}
+                aria-label={t('params.straightenRule')}
+                aria-pressed={frameTool === 'straighten'}
+                className={`rounded-md border p-1.5 transition-colors ${
+                  frameTool === 'straighten'
+                    ? 'border-accent-600 bg-accent-50 text-accent-700'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                <Ruler size={14} />
+              </button>
+            }
           />
           {frameTool === 'straighten' && <p className="text-xs text-slate-400">{t('params.straightenHint')}</p>}
           <button
