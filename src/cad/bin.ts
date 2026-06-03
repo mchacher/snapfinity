@@ -39,7 +39,7 @@ const SOCKET_VERTICAL_PART = SOCKET_HEIGHT - SOCKET_SMALL_TAPER - SOCKET_BIG_TAP
 const SOCKET_TAPER_WIDTH = SOCKET_SMALL_TAPER + SOCKET_BIG_TAPER;
 const WALL = 1.2;
 /** Height the swept top profile adds above the box body (measured; pitch/lip independent). */
-const TOP_RISE = 3.38;
+export const TOP_RISE = 3.38;
 
 export interface BinParams {
   cols: number;

@@ -1,6 +1,6 @@
 import type { Point2D } from '../core/offset';
 import type { BinParams } from './bin';
-import type { ExportFormat, MeshArrays, WorkerRequest, WorkerResponse } from './cad-messages';
+import type { ExportFormat, MeshArrays, NotchConfig, WorkerRequest, WorkerResponse } from './cad-messages';
 
 /**
  * Main-thread client for the CAD worker. Owns a lazy `Worker` singleton and routes each reply
@@ -50,8 +50,13 @@ function request<T>(payload: DistributiveOmit<WorkerRequest, 'id'>): Promise<T> 
 }
 
 /** Build the bin off the main thread → transferable mesh arrays. */
-export function buildBin(binParams: BinParams, footprint: Point2D[] | null, depthMm: number): Promise<MeshArrays> {
-  return request<MeshArrays>({ type: 'build', binParams, footprint, depthMm });
+export function buildBin(
+  binParams: BinParams,
+  footprint: Point2D[] | null,
+  depthMm: number,
+  notch: NotchConfig,
+): Promise<MeshArrays> {
+  return request<MeshArrays>({ type: 'build', binParams, footprint, depthMm, notch });
 }
 
 /** Export the worker's current shape (STL/STEP) → Blob. */

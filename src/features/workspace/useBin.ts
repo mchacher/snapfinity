@@ -32,7 +32,7 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
   const built = useRef<{ sig: string; fp: Point2D[] | null } | null>(null);
 
   const hasPocket = !!footprintMm && footprintMm.length >= 3;
-  const sig = `${params.cols}|${params.rows}|${params.heightUnits}|${params.pitchMm}|${params.includeLip}|${params.thicknessMm}`;
+  const sig = `${params.cols}|${params.rows}|${params.heightUnits}|${params.pitchMm}|${params.includeLip}|${params.thicknessMm}|${params.gripNotches}|${params.notchRadiusMm}|${params.notchOffsetXMm}|${params.notchOffsetYMm}`;
 
   useEffect(() => {
     if (!enabled) return;
@@ -50,7 +50,12 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
             pitchMm: params.pitchMm,
             includeLip: params.includeLip,
           };
-          const mesh = await buildBin(binParams, hasPocket ? footprintMm : null, params.thicknessMm);
+          const mesh = await buildBin(binParams, hasPocket ? footprintMm : null, params.thicknessMm, {
+            enabled: params.gripNotches,
+            radiusMm: params.notchRadiusMm,
+            offsetXMm: params.notchOffsetXMm,
+            offsetYMm: params.notchOffsetYMm,
+          });
           if (!cancelled) {
             built.current = { sig, fp: footprintMm };
             setState({ geometry: arraysToGeometry(mesh), status: 'ready' });
@@ -64,7 +69,7 @@ export function useBin(params: Params, footprintMm: Point2D[] | null, enabled: b
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [enabled, sig, footprintMm, hasPocket, params.cols, params.rows, params.heightUnits, params.pitchMm, params.includeLip, params.thicknessMm]);
+  }, [enabled, sig, footprintMm, hasPocket, params.cols, params.rows, params.heightUnits, params.pitchMm, params.includeLip, params.thicknessMm, params.gripNotches, params.notchRadiusMm, params.notchOffsetXMm, params.notchOffsetYMm]);
 
   const exportBin = useCallback(
     (format: ExportFormat): Promise<Blob | null> => exportBinViaWorker(format).catch(() => null),

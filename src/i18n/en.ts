@@ -49,6 +49,10 @@ export const en = {
     sizeSection: 'Size',
     general: 'General',
     render: 'Render',
+    grip: 'Grip notches',
+    gripSize: 'Notch size',
+    gripX: 'Grip X offset',
+    gripY: 'Grip Y offset',
   },
   export: {
     title: 'Export',

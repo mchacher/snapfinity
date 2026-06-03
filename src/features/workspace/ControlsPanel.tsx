@@ -202,6 +202,38 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
           step={0.5}
         />
         <Toggle label={t('params.lip')} checked={params.includeLip} onChange={(v) => set('includeLip', v)} />
+        <Toggle label={t('params.grip')} checked={params.gripNotches} onChange={(v) => set('gripNotches', v)} />
+        {params.gripNotches && (
+          <>
+            <Slider
+              label={t('params.gripSize')}
+              value={params.notchRadiusMm}
+              onChange={(v) => set('notchRadiusMm', v)}
+              min={5}
+              max={15}
+              step={0.5}
+              unit="mm"
+            />
+            <Slider
+              label={t('params.gripX')}
+              value={params.notchOffsetXMm}
+              onChange={(v) => set('notchOffsetXMm', v)}
+              min={-60}
+              max={60}
+              step={1}
+              unit="mm"
+            />
+            <Slider
+              label={t('params.gripY')}
+              value={params.notchOffsetYMm}
+              onChange={(v) => set('notchOffsetYMm', v)}
+              min={-120}
+              max={120}
+              step={1}
+              unit="mm"
+            />
+          </>
+        )}
       </Section>
 
       <Section title={t('params.render')}>

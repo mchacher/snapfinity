@@ -16,9 +16,27 @@ export interface MeshArrays {
 
 export type ExportFormat = 'stl' | 'step';
 
+/** Vertical pinch-grip config: a symmetric pair of finger scoops at the object's edge. */
+export interface NotchConfig {
+  enabled: boolean;
+  /** Finger-scoop radius in mm. */
+  radiusMm: number;
+  /** Symmetric X offset from the object edge, mm (widens/narrows the pair). */
+  offsetXMm: number;
+  /** Y offset along the depth, mm (0 = object mid-depth). */
+  offsetYMm: number;
+}
+
 /** main → worker. Each request carries an `id`; the reply echoes it. */
 export type WorkerRequest =
-  | { type: 'build'; id: number; binParams: BinParams; footprint: Point2D[] | null; depthMm: number }
+  | {
+      type: 'build';
+      id: number;
+      binParams: BinParams;
+      footprint: Point2D[] | null;
+      depthMm: number;
+      notch: NotchConfig;
+    }
   | { type: 'export'; id: number; format: ExportFormat };
 
 /** worker → main. `built` transfers the array buffers; `exported` clones the Blob. */

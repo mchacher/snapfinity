@@ -51,6 +51,10 @@ export const fr: Dict = {
     sizeSection: 'Taille',
     general: 'Général',
     render: 'Rendu',
+    grip: 'Encoches préhension',
+    gripSize: 'Taille encoche',
+    gripX: 'Décalage X',
+    gripY: 'Décalage Y',
   },
   export: {
     title: 'Export',

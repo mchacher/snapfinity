@@ -24,6 +24,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 017 | [cad-worker](../specs/017-cad-worker/) | ✅ Done | Perf step 2/3: move the replicad **build + mesh + export to a web worker**. The shape stays in the worker (WASM handle); main thread gets transferable mesh arrays + export blobs. Preview stays interactive during rebuild; export no longer freezes. Iteration 10. |
 | 018 | [3d-transparency](../specs/018-3d-transparency/) | ✅ Done | Preview **opacity slider** (Render section, 0.2–1, default 1) — translucent bin (`depthWrite` off) to see the pocket through the walls. Preview-only, no geometry/export change. Iteration 11. |
 | 019 | [pdf-plan](../specs/019-pdf-plan/) | In review | **Printable 1:1 top-view PDF** (pdf-lib): object outline (solid) + pocket (dashed) at true scale, 50 mm control ruler, print-at-100% header, A4 multi-page tiling. Header "Plan PDF" button, gated on a calibrated contour. Iteration 12. |
+| 020 | [grip-notches](../specs/020-grip-notches/) | In review | **Two-finger pinch grip** — a symmetric pair of vertical finger scoops at the object's edge (X/Y offsets); cut in the CAD worker (base bin cached for snappy moves). Iteration 13. |
 
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.
