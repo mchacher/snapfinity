@@ -10,6 +10,12 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Changed
+
+- The landing page now shows on **every** visit (it's the product's front door); the workspace
+  logo is a clickable **"home"** that returns to it. Previously the landing was remembered in
+  `localStorage` and skipped on return, so reopening the link went straight to the workspace.
+
 ## [1.0.0] - 2026-06-03
 
 First public release. Snapfinity turns a phone photo of an object — placed next to a printed

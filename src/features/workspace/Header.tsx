@@ -5,6 +5,8 @@ import { Tabs } from '../../ui/Tabs';
 import { useI18n, type Lang } from '../../i18n';
 
 interface Props {
+  /** Return to the landing page (clicking the logo). */
+  onHome?: () => void;
   onExport: (format: 'stl' | 'step') => void;
   canExport: boolean;
   /** Export the printable 1:1 top-view PDF plan (needs a calibrated contour). */
@@ -18,15 +20,23 @@ interface Props {
   canRedo: boolean;
 }
 
-export function Header({ onExport, canExport, onExportPdf, canExportPdf, tab, onTabChange, onUndo, onRedo, canUndo, canRedo }: Props) {
+export function Header({ onHome, onExport, canExport, onExportPdf, canExportPdf, tab, onTabChange, onUndo, onRedo, canUndo, canRedo }: Props) {
   const { lang, setLang, t } = useI18n();
   const langs: Lang[] = ['fr', 'en'];
 
   return (
     <header className="flex items-center border-b border-slate-200 bg-white px-4 py-2.5">
       <div className="flex items-center gap-2">
-        <Logo size={34} className="text-accent-600" />
-        <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
+        <button
+          type="button"
+          onClick={onHome}
+          title={t('header.home')}
+          aria-label={t('header.home')}
+          className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-70"
+        >
+          <Logo size={34} className="text-accent-600" />
+          <span className="text-sm font-semibold tracking-tight text-slate-800">Snapfinity</span>
+        </button>
         <span className="hidden text-xs text-slate-400 sm:inline">· {t('app.tagline')}</span>
         <div className="ml-3 flex items-center gap-0.5">
           <button
