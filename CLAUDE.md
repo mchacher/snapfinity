@@ -62,6 +62,10 @@ leaves the device, hosting is a free static site, and it scales infinitely.
 - **Specs-first, gate-driven** workflow — use the `snapfinity-feature` skill. Never
   skip a gate, never start coding without an approved spec.
 - **One feature = one `feat/` branch = one spec = one PR.** Never commit to `master`.
+- **Release notes are mandatory** (since v1.0.0). Every PR adds an entry under `## [Unreleased]`
+  in [CHANGELOG.md](CHANGELOG.md) — CI-enforced (`.github/workflows/changelog.yml`); trivial PRs
+  may carry the `skip-changelog` label. Versioning is [SemVer]; a release moves `[Unreleased]`
+  under a new dated heading and is published as a `vX.Y.Z` GitHub Release with those notes.
 - **English** in code, specs, and docs. UI copy language TBD in the first UI spec.
 - The original Python script (`100_Gridfinity/GridfinityFootprintGenerator/`) is the
   **algorithm oracle / tuning bench**, NOT part of the product. Keep it intact; use it
