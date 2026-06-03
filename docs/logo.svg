@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="288" height="64" viewBox="0 0 288 64" fill="none" role="img" aria-label="Snapfinity">
+  <!-- mark tile -->
+  <rect x="8" y="8" width="48" height="48" rx="12" fill="#3b8ef0"/>
+  <!-- F1 mark: camera in a Gridfinity bin (white, scaled into the tile) -->
+  <g transform="translate(16 16) scale(1.333)" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="3" y="3" width="18" height="18" rx="4"/>
+    <path d="M12 3.9V6.6M12 17.4V20.1M3.9 12H6.6M17.4 12H20.1" opacity="0.5"/>
+    <rect x="6.9" y="9.9" width="10.2" height="7" rx="1.5"/>
+    <path d="M9.6 9.9 10.6 8.2H13.4L14.4 9.9"/>
+    <circle cx="12" cy="13.4" r="2.1"/>
+  </g>
+  <!-- wordmark -->
+  <text x="72" y="32" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="23" font-weight="700" letter-spacing="-0.3" fill="#1e293b">Snapfinity</text>
+  <text x="73" y="48" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" fill="#64748b">Photo → bac Gridfinity</text>
+</svg>

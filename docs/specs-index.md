@@ -34,5 +34,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 | 027 | [edge-segment](../specs/027-edge-segment/) | ✅ Done | **Détourage for transparent/reflective objects**: u2netp misses clear plastic (reads as background); add an **edge-based** mask (Canny → close → fill → largest blob) + a **Méthode** selector (Auto / Standard / Contours). **Auto** switches to edges only when the edge silhouette is object-sized AND (u2netp found ~nothing OR its bbox is much smaller — it missed the object's extent); thresholds **browser-measured**; `chooseSegmentMode` unit-tested, edge pipeline covered by a tsx oracle. Iteration 20. |
 | 028 | [slider-design](../specs/028-slider-design/) | In review | **Slider restyle** ("fader") — custom `<input type=range>`: thin rounded track with accent fill + vertical rounded-rectangle thumb; softer azure-gray unfilled track (`--color-slider-track`). FR i18n fix: "Calibration" → "Calibrage". Visual only (no behaviour/props change). Iteration 21. |
 
+| 029 | [logo](../specs/029-logo/) | In review | **Brand mark**: a camera-in-a-Gridfinity-bin SVG (chosen interactively, variant F1). `ui/Logo` (accent on the white header), `public/favicon.svg` (white tile, light+dark tabs) + `index.html` link, and a `docs/logo.svg` lockup (tile + wordmark) in the README. Visual only. Iteration 21. |
+
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

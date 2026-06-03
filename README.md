@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" alt="Snapfinity" height="64" /></p>
+
 # Snapfinity
 
 Snap a photo of a tool → get a custom **Gridfinity** bin with a pocket shaped exactly
