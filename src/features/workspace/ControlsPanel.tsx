@@ -261,13 +261,13 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
           unit="mm"
         />
 
-        <div className="flex items-center gap-3 py-1.5">
-          <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.size')}</span>
-          <span className="flex flex-1 items-center gap-2">
+        <div className="flex items-center justify-between gap-2 py-1.5">
+          <span className="text-sm text-slate-600">{t('params.size')}</span>
+          <span className="flex items-center gap-2">
+            {!params.manualSize && <Chip tone="neutral">{t('params.auto')}</Chip>}
             <span className="font-mono text-sm text-slate-800">
               {params.cols} × {params.rows}
             </span>
-            {!params.manualSize && <Chip tone="neutral">{t('params.auto')}</Chip>}
           </span>
         </div>
         <Toggle label={t('params.adjust')} checked={params.manualSize} onChange={(v) => set('manualSize', v)} />

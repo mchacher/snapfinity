@@ -93,6 +93,15 @@ export const en = {
     hint: 'Your bin will appear here',
     loading: 'Generating…',
     error: 'Render failed',
+    fit: 'Fit to view',
+    face: {
+      top: 'Top',
+      bottom: 'Bottom',
+      front: 'Front',
+      back: 'Back',
+      left: 'Left',
+      right: 'Right',
+    },
   },
 };
 
