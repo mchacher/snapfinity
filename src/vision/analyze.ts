@@ -194,7 +194,14 @@ export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMod
     const u = buildU2netp();
     const e = buildEdges();
     const frame = ww * wh;
-    const pick = chooseSegmentMode(cv.countNonZero(u) / frame, cv.countNonZero(e) / frame);
+    const uf = cv.countNonZero(u) / frame;
+    const ef = cv.countNonZero(e) / frame;
+    // Compare EXTENT, not just area: a missed thin tip is tiny in area but large in bbox reach.
+    const ub = maskBBox(new Uint8Array(u.data), ww, wh);
+    const eb = maskBBox(new Uint8Array(e.data), ww, wh);
+    const ubA = ub ? ub.w * ub.h : 0;
+    const bboxRatio = ubA > 0 && eb ? (eb.w * eb.h) / ubA : 0;
+    const pick = chooseSegmentMode(uf, ef, bboxRatio);
     maskWork = pick === 'edges' ? e : u;
     (pick === 'edges' ? u : e).delete();
   }

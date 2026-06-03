@@ -34,10 +34,14 @@ between it and u2netp.
 - `edgeMask(rgba, w, h)` (pure-ish, opencv): blur → Canny → dilate → morph-close → fill contours →
   binary mask, at the détourage working resolution. The existing `cleanMask` then removes the
   token region + keeps the largest blob (shared with u2netp).
-- **Auto selector** (`chooseSegmentMode`, pure + unit-tested): given the cleaned u2netp coverage
-  and edge coverage (fractions of the frame), return `'edges'` only when
-  `u2netpFrac < ~2.5%` **and** `~1% ≤ edgeFrac ≤ ~55%`; else `'standard'`. Thresholds are
-  backed by a measured dataset table (transparent → edges; opaque & textured → u2netp).
+- **Auto selector** (`chooseSegmentMode`, pure + unit-tested): inputs are the cleaned u2netp/edge
+  area fractions **and the ratio of their bounding-box areas**. Use `'edges'` when the edge
+  silhouette is object-sized (`~1% ≤ edgeFrac ≤ ~55%`, so a textured background doesn't trigger
+  it) **and** either u2netp found ~nothing (`< ~2.5%`) **or** u2netp **missed the object's extent**
+  (edge bbox ≥ `~1.3×` u2netp's). The extent test matters because a missed thin tip (a tester
+  screwdriver's point) is **tiny in area but large in reach** — area alone keeps u2netp wrongly.
+  Thresholds are backed by a **browser-measured** dataset table (onnxruntime-web differs a lot
+  from node, so node measurements don't transfer).
 
 ### UI & params
 - New param `segmentMode: 'auto' | 'standard' | 'edges'` (default `'auto'`).

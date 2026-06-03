@@ -34,21 +34,25 @@ so the edge mask is computed in the same cheap, threshold-driven step (no u2netp
 Edges don't depend on the saliency threshold, so in pure `edges` mode the threshold slider is
 inert — acceptable for v1; a later optimisation could memoise the edge mask per analysis.
 
-## Auto thresholds (measured)
+## Auto thresholds (browser-measured)
 
-From `tools/cv/compare-modes.ts` over 9 photos (u2netp% / edge% of frame):
+**onnxruntime-web (browser) gives very different saliency from onnxruntime-node** — the node
+oracle said the screwdriver's u2netp was 0.3 %, but the **browser** gives 6.3 % (it actually
+finds the body, just **misses the thin metal tip**). So the thresholds are tuned on **browser**
+`[auto]` instrumentation, and area alone is not enough — a missed tip is tiny in area but large in
+**extent**. Hence the **bbox-area ratio** (edge bbox / u2netp bbox):
 
-| object | u2netp | edge | → |
-|---|---|---|---|
-| screwdriver (transparent) | 0.28 | 5.46 | edges |
-| pen-white (thin) | 0.08 | 2.60 | edges |
-| scissors-white | 12 | 15 | u2netp |
-| scissors-wood | 10 | 74 | u2netp |
-| caliper-chrome (wood) | 7.9 | 93 | u2netp |
-| hole-punch / mouse / eraser | 7–21 | ~equal/low | u2netp |
+| object | u2netp | edge | bbox ratio | → |
+|---|---|---|---|---|
+| screwdriver (transparent, missed tip) | 0.063 | 0.061 | **1.48** | edges |
+| pen-white (thin, u2netp ~nothing) | 0.001 | 0.029 | 24.9 | edges |
+| scissors-white (opaque) | 0.118 | 0.151 | 1.01 | u2netp |
+| scissors-wood (textured) | 0.117 | **0.750** | 3.29 | u2netp |
+| fork / hole-punch (opaque) | 1.0 / 0.20 | 0.07 / 0.20 | 0.13 / 0.98 | u2netp |
 
-→ `u2netpFrac < 0.025` AND `0.01 ≤ edgeFrac ≤ 0.55` ⇒ edges. Cleanly separates the two transparent
-cases from every opaque/textured case.
+→ `EDGE_MIN(0.01) ≤ edgeFrac ≤ EDGE_MAX(0.55)` **and** ( `u2netpFrac < 0.025` **or**
+`bboxRatio ≥ 1.3` ) ⇒ edges. The `edgeFrac ≤ 0.55` guard drops the textured blow-up before the
+bbox ratio can fire on it.
 
 ## Testing
 
