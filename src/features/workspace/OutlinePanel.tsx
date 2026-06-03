@@ -21,8 +21,11 @@ interface Props {
   onUpload: (file: File) => void;
   /** Paint a disc into the edit layer (mask-space) — value chosen from the brush mode. */
   onPaint: (maskX: number, maskY: number, maskRadius: number, value: number) => void;
-  /** Active photo tool (brush vs framing). */
-  tool: 'brush' | 'straighten' | 'crop';
+  /** Active photo tool (brush vs framing vs contour edit). */
+  tool: 'brush' | 'straighten' | 'crop' | 'contour';
+  /** Editable contour nodes (full-res px) + commit, in `contour` mode (spec 035). */
+  editNodes?: Point2D[];
+  onEditNodes?: (ring: Point2D[]) => void;
   onStraighten: (p1: Point2D, p2: Point2D) => void;
   onCrop: (p1: Point2D, p2: Point2D) => void;
   onCancelCrop: () => void;
@@ -43,6 +46,8 @@ export function OutlinePanel({
   onUpload,
   onPaint,
   tool,
+  editNodes,
+  onEditNodes,
   onStraighten,
   onCrop,
   onCancelCrop,
@@ -116,6 +121,8 @@ export function OutlinePanel({
             brushSize={params.brushSize}
             brushErase={params.brushMode === 'erase'}
             tool={tool}
+            editNodes={editNodes}
+            onEditNodes={onEditNodes}
             onStraighten={onStraighten}
             onCrop={onCrop}
             onCancelCrop={onCancelCrop}

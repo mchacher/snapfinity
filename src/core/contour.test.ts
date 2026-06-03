@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Point2D } from './offset';
-import { chaikin, rectifyStraightEdges, refineContour, simplify, smoothContour } from './contour';
+import {
+  chaikin,
+  deleteNode,
+  insertNode,
+  moveNode,
+  nearestNode,
+  nearestSegment,
+  rectifyStraightEdges,
+  refineContour,
+  simplify,
+  simplifyForEdit,
+  smoothContour,
+} from './contour';
 
 /**
  * Each edge's deviation (rad, abs) from the FIRST edge's axis, folded to ±45°. For a crisp
@@ -148,5 +160,77 @@ describe('refineContour', () => {
     const out = refineContour(square, { ...opts, straighten: true });
     // the 4 corners survive (Chaikin would have removed them)
     for (const c of square) expect(out).toContainEqual(c);
+  });
+});
+
+// A 100×100 square ring (open list, implicitly closed) for the editable-contour tests.
+const bigSquare: Point2D[] = [
+  [0, 0],
+  [100, 0],
+  [100, 100],
+  [0, 100],
+];
+
+describe('simplifyForEdit', () => {
+  it('reduces a dense ring to ≤ max nodes', () => {
+    // a 400-point circle
+    const dense: Point2D[] = Array.from({ length: 400 }, (_, i) => {
+      const a = (i / 400) * Math.PI * 2;
+      return [500 + Math.cos(a) * 200, 500 + Math.sin(a) * 200] as Point2D;
+    });
+    const out = simplifyForEdit(dense, 40);
+    expect(out.length).toBeLessThanOrEqual(40);
+    expect(out.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('leaves a tiny ring unchanged', () => {
+    expect(simplifyForEdit(bigSquare, 48)).toHaveLength(4);
+  });
+});
+
+describe('nearestNode', () => {
+  it('finds the closest node within range', () => {
+    expect(nearestNode(bigSquare, [98, 3], 10)).toBe(1); // near [100,0]
+  });
+  it('returns -1 when nothing is in range', () => {
+    expect(nearestNode(bigSquare, [50, 50], 10)).toBe(-1); // centre, far from every corner
+  });
+});
+
+describe('nearestSegment', () => {
+  it('projects onto the closest edge', () => {
+    const hit = nearestSegment(bigSquare, [50, 4], 10); // near the top edge 0→1
+    expect(hit?.index).toBe(0);
+    expect(hit?.point[1]).toBeCloseTo(0);
+    expect(hit?.point[0]).toBeCloseTo(50);
+  });
+  it('includes the closing edge (3→0)', () => {
+    const hit = nearestSegment(bigSquare, [4, 50], 10); // near the left edge 3→0
+    expect(hit?.index).toBe(3);
+  });
+  it('returns null when far from every edge', () => {
+    expect(nearestSegment(bigSquare, [50, 50], 5)).toBeNull();
+  });
+});
+
+describe('moveNode / insertNode / deleteNode', () => {
+  it('moves a node without mutating the input', () => {
+    const out = moveNode(bigSquare, 0, [5, 5]);
+    expect(out[0]).toEqual([5, 5]);
+    expect(bigSquare[0]).toEqual([0, 0]); // original untouched
+  });
+  it('inserts a node after the given index', () => {
+    const out = insertNode(bigSquare, 0, [50, 0]);
+    expect(out).toHaveLength(5);
+    expect(out[1]).toEqual([50, 0]);
+  });
+  it('deletes a node but keeps at least 3', () => {
+    expect(deleteNode(bigSquare, 0)).toHaveLength(3);
+    const tri: Point2D[] = [
+      [0, 0],
+      [10, 0],
+      [5, 10],
+    ];
+    expect(deleteNode(tri, 0)).toHaveLength(3); // refuses to drop below 3
   });
 });

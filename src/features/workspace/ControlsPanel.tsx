@@ -1,4 +1,4 @@
-import { Crop, Ruler } from 'lucide-react';
+import { Crop, PenLine, Ruler } from 'lucide-react';
 import { Section } from '../../ui/Section';
 import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
@@ -24,10 +24,35 @@ interface Props {
   onResetFraming: () => void;
   /** Quarter-turn the photo (−90° left / +90° right). */
   onRotate90: (dir: -1 | 1) => void;
+  /** Contour editor (spec 035). */
+  canEditContour: boolean;
+  editingContour: boolean;
+  hasManualContour: boolean;
+  onEditContour: () => void;
+  onResetContour: () => void;
+  onClearContour: () => void;
+  onDoneContour: () => void;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
-export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameTool, onFrameTool, onResetFraming, onRotate90 }: Props) {
+export function ControlsPanel({
+  params,
+  set,
+  tab,
+  onResetEdits,
+  hasEdits,
+  frameTool,
+  onFrameTool,
+  onResetFraming,
+  onRotate90,
+  canEditContour,
+  editingContour,
+  hasManualContour,
+  onEditContour,
+  onResetContour,
+  onClearContour,
+  onDoneContour,
+}: Props) {
   const { t } = useI18n();
 
   if (tab === 'outline') {
@@ -212,6 +237,55 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameT
             step={0.1}
             unit="mm"
           />
+          {/* Contour editor (spec 035): hand-tune the détourage with draggable nodes. */}
+          {editingContour ? (
+            <div className="mt-1 rounded-lg bg-accent-50 px-3 py-2 ring-1 ring-accent-200">
+              <p className="text-xs leading-relaxed text-slate-600">{t('params.contourHint')}</p>
+              <div className="mt-2 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={onResetContour}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  {t('params.contourReset')}
+                </button>
+                <button
+                  type="button"
+                  onClick={onDoneContour}
+                  className="flex-1 rounded-lg bg-accent-600 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-700"
+                >
+                  {t('params.contourDone')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 py-1.5">
+              <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.contour')}</span>
+              <div className="flex flex-1 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={onEditContour}
+                  disabled={!canEditContour}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <PenLine size={14} /> {t('params.contourEdit')}
+                </button>
+                {hasManualContour && (
+                  <button
+                    type="button"
+                    onClick={onClearContour}
+                    title={t('params.contourClear')}
+                    className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50"
+                  >
+                    {t('params.contourClear')}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {hasManualContour && !editingContour && (
+            <p className="text-right text-xs text-accent-600">{t('params.contourManual')}</p>
+          )}
         </Section>
         <Section title={t('params.brush')}>
           <div className="mb-3">
