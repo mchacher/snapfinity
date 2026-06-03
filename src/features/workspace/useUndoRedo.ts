@@ -29,34 +29,61 @@ export interface UndoRedo {
 const IDLE_MS = 400;
 
 /**
- * Multi-step undo/redo over `{ params, brush }`. Changes are committed to history **on idle**
- * (so a slider drag or a brush stroke is one step); applying an undo/redo is flagged so it
- * doesn't record a new entry. The pure stack lives in `history.ts`.
+ * A change worth its own undo step. **Auto-derived `cols`/`rows`** (set by the auto-size effect
+ * after a re-analysis) are NOT user actions — they'd otherwise flood the history (and a crop
+ * could never be undone). They're folded into the present instead.
+ */
+function meaningfulParamChange(prev: Params, next: Params): boolean {
+  for (const key of Object.keys(next) as (keyof Params)[]) {
+    if (next[key] === prev[key]) continue;
+    if ((key === 'cols' || key === 'rows') && !next.manualSize) continue; // auto-derived
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Multi-step undo/redo over `{ params, brush }`. Changes are committed **on idle** (so a slider
+ * drag or a brush stroke is one step). At commit time a change is either **recorded** (a real
+ * user action) or **folded** into the present (auto-derived size). Applying an undo/redo is
+ * flagged so it doesn't record. The pure stack lives in `history.ts`.
  */
 export function useUndoRedo({ params, setParams, version, snapshot, restore, resetKey }: Args): UndoRedo {
   const hist = useRef<History<Snapshot>>(initHistory({ params, brush: snapshot() }));
-  // identity of the present snapshot, to skip no-op commits (mount, post-apply).
   const committed = useRef<{ params: Params; version: number }>({ params, version });
+  const latest = useRef<{ params: Params; version: number }>({ params, version });
   const applying = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
 
-  // commit-on-idle: coalesce a burst of changes (slider drag / brush stroke) into one record.
+  latest.current = { params, version };
+
+  const commit = () => {
+    timer.current = null;
+    const { params: p, version: v } = latest.current;
+    if (p === committed.current.params && v === committed.current.version) return;
+    const meaningful = v !== committed.current.version || meaningfulParamChange(committed.current.params, p);
+    if (meaningful) {
+      hist.current = record(hist.current, { params: p, brush: snapshot() });
+      rerender();
+    } else {
+      // auto-derived size only → keep the present in sync without a new undo step
+      hist.current = { ...hist.current, present: { ...hist.current.present, params: p } };
+    }
+    committed.current = { params: p, version: v };
+  };
+
+  // schedule a coalesced commit whenever the state changes (user-driven, not an undo apply)
   useEffect(() => {
     if (applying.current) {
       applying.current = false;
       committed.current = { params, version };
       return;
     }
-    if (params === committed.current.params && version === committed.current.version) return; // no real change
+    if (params === committed.current.params && version === committed.current.version) return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      hist.current = record(hist.current, { params, brush: snapshot() });
-      committed.current = { params, version };
-      timer.current = null;
-      rerender();
-    }, IDLE_MS);
+    timer.current = setTimeout(commit, IDLE_MS);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
@@ -64,36 +91,34 @@ export function useUndoRedo({ params, setParams, version, snapshot, restore, res
 
   // new photo → fresh history
   useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
     hist.current = initHistory({ params, brush: snapshot() });
     committed.current = { params, version };
     rerender();
   }, [resetKey]);
 
-  const flushPending = () => {
+  const flush = () => {
     if (!timer.current) return;
     clearTimeout(timer.current);
-    timer.current = null;
-    hist.current = record(hist.current, { params, brush: snapshot() });
-    committed.current = { params, version };
+    commit();
   };
-
   const apply = (snap: Snapshot) => {
     applying.current = true;
     setParams(snap.params);
     restore(snap.brush);
     rerender();
   };
-
   const doUndo = () => {
-    flushPending();
+    flush();
     if (!canUndo(hist.current)) return;
     hist.current = undo(hist.current);
     apply(hist.current.present);
   };
   const doRedo = () => {
-    flushPending();
+    flush();
     if (!canRedo(hist.current)) return;
     hist.current = redo(hist.current);
     apply(hist.current.present);
