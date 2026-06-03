@@ -48,6 +48,10 @@ export const fr: Dict = {
     contourClear: 'Auto',
     contourManual: 'Contour manuel',
     contourHint: 'Glisse un point pour le déplacer · clique une arête pour ajouter un point · double-clique un point pour le supprimer.',
+    lasso: 'Lasso magnétique',
+    lassoSelect: 'Tracer',
+    lassoHint:
+      "Clique sur le bord pour démarrer, longe-le (le tracé colle au bord), clique pour ancrer. Clique le 1ᵉʳ point ou double-clique pour fermer · Échap (ou Retour arrière) annule le dernier point, jusqu'au départ.",
     framing: 'Cadrage',
     angle: 'Angle',
     rotate: 'Pivoter',

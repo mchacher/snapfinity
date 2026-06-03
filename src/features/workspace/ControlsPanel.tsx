@@ -1,4 +1,4 @@
-import { Crop, PenLine, Ruler } from 'lucide-react';
+import { Crop, Lasso, PenLine, Ruler } from 'lucide-react';
 import { Section } from '../../ui/Section';
 import { Chip } from '../../ui/Chip';
 import { Slider } from '../../ui/Slider';
@@ -32,6 +32,8 @@ interface Props {
   onResetContour: () => void;
   onClearContour: () => void;
   onDoneContour: () => void;
+  /** Magnetic lasso (spec 037) — armed via the frame tool; enabled once a photo is loaded. */
+  canLasso: boolean;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
@@ -52,6 +54,7 @@ export function ControlsPanel({
   onResetContour,
   onClearContour,
   onDoneContour,
+  canLasso,
 }: Props) {
   const { t } = useI18n();
 
@@ -237,6 +240,24 @@ export function ControlsPanel({
             step={0.1}
             unit="mm"
           />
+          {/* Magnetic lasso (spec 037): trace the boundary; it snaps to edges → editable contour. */}
+          <div className="flex items-center gap-3 py-1.5">
+            <span className="w-28 shrink-0 text-sm text-slate-600">{t('params.lasso')}</span>
+            <button
+              type="button"
+              onClick={() => onFrameTool(frameTool === 'lasso' ? 'none' : 'lasso')}
+              disabled={!canLasso}
+              aria-pressed={frameTool === 'lasso'}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                frameTool === 'lasso'
+                  ? 'border-accent-300 bg-accent-50 text-accent-700'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Lasso size={14} /> {t('params.lassoSelect')}
+            </button>
+          </div>
+          {frameTool === 'lasso' && <p className="text-xs leading-relaxed text-slate-400">{t('params.lassoHint')}</p>}
           {/* Contour editor (spec 035): hand-tune the détourage with draggable nodes. */}
           {editingContour ? (
             <div className="mt-1 rounded-lg bg-accent-50 px-3 py-2 ring-1 ring-accent-200">

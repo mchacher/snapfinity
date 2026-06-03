@@ -32,8 +32,8 @@ function composeCrop(outer: CropRect | null, inner: CropRect): CropRect {
   };
 }
 
-/** Photo framing tool (Outline tab): brush (default) vs straighten vs crop vs contour edit. */
-export type FrameTool = 'none' | 'straighten' | 'crop' | 'contour';
+/** Photo framing tool (Outline tab): brush (default) vs straighten vs crop vs contour edit vs lasso. */
+export type FrameTool = 'none' | 'straighten' | 'crop' | 'contour' | 'lasso';
 // Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
 import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
 import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
@@ -251,6 +251,12 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
     setEditedContour(null);
     setFrameTool((tl) => (tl === 'contour' ? 'none' : tl));
   };
+  // Magnetic lasso (spec 037): a traced closed contour seeds the node editor to refine.
+  const onLasso = (ring: Point2D[]) => {
+    if (ring.length < 3) return;
+    setEditedContour(simplifyForEdit(ring));
+    setFrameTool('contour');
+  };
   const offsetContour = useMemo(() => {
     if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
     return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
@@ -365,6 +371,7 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
             onResetContour={resetContour}
             onClearContour={clearContour}
             onDoneContour={() => setFrameTool('none')}
+            canLasso={!!photo.framed}
           />
         </aside>
         <section className="relative min-h-0 p-4">
@@ -386,6 +393,8 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
               tool={frameTool === 'none' ? 'brush' : frameTool}
               editNodes={editedContour ?? undefined}
               onEditNodes={setEditedContour}
+              onLasso={onLasso}
+              onCancelLasso={() => setFrameTool('none')}
               onStraighten={onStraighten}
               onCrop={onCrop}
               onCancelCrop={() => setFrameTool('none')}

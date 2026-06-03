@@ -46,6 +46,10 @@ export const en = {
     contourClear: 'Auto',
     contourManual: 'Manual contour',
     contourHint: 'Drag a point to move · click an edge to add a point · double-click a point to remove it.',
+    lasso: 'Magnetic lasso',
+    lassoSelect: 'Trace',
+    lassoHint:
+      'Click on the edge to start, move along it (the line snaps to the edge), click to anchor. Click the first point or double-click to close · Esc (or Backspace) undoes the last point, back to the start.',
     framing: 'Framing',
     angle: 'Angle',
     rotate: 'Rotate',

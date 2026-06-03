@@ -10,6 +10,7 @@ import type { PhotoAnalysis } from '../../vision/analyze';
 import type { BBox } from '../../vision/mask';
 import type { Point2D } from '../../core/offset';
 import { deleteNode, insertNode, moveNode, nearestNode, nearestSegment } from '../../core/contour';
+import { LassoEditor } from './LassoEditor';
 import {
   defaultCropBox,
   moveCropBox,
@@ -216,6 +217,8 @@ export function PhotoOverlay({
   tool = 'brush',
   editNodes,
   onEditNodes,
+  onLasso,
+  onCancelLasso,
   onStraighten,
   onCrop,
   onCancelCrop,
@@ -251,11 +254,14 @@ export function PhotoOverlay({
   brushSize?: number;
   brushErase?: boolean;
   /** Active interaction tool. */
-  tool?: 'brush' | 'straighten' | 'crop' | 'contour';
+  tool?: 'brush' | 'straighten' | 'crop' | 'contour' | 'lasso';
   /** Editable-contour nodes (full-res px) shown in `contour` mode. */
   editNodes?: Point2D[];
   /** Commit an edited node ring (move / insert / delete). */
   onEditNodes?: (ring: Point2D[]) => void;
+  /** Magnetic lasso (spec 037): a closed contour (full-res px) on completion, + cancel. */
+  onLasso?: (ring: Point2D[]) => void;
+  onCancelLasso?: () => void;
   /** Straighten gesture: two points (image px) along a line that should be level. */
   onStraighten?: (p1: Point2D, p2: Point2D) => void;
   /** Crop applied: two opposite corners (image px) of the kept region. */
@@ -343,7 +349,7 @@ export function PhotoOverlay({
 
     // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent. Skipped
     // while editing the contour — the editable overlay (ContourEditor) draws it instead.
-    if (tool !== 'contour') {
+    if (tool !== 'contour' && tool !== 'lasso') {
       drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
       drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
     }
@@ -506,6 +512,15 @@ export function PhotoOverlay({
       {showGrid && width > 0 && height > 0 && <AlignmentGrid width={width} height={height} />}
       {tool === 'contour' && editNodes && editNodes.length >= 3 && width > 0 && height > 0 && (
         <ContourEditor width={width} height={height} nodes={editNodes} onChange={(ring) => onEditNodes?.(ring)} />
+      )}
+      {tool === 'lasso' && width > 0 && height > 0 && (
+        <LassoEditor
+          imageRef={imageRef}
+          width={width}
+          height={height}
+          onComplete={(ring) => onLasso?.(ring)}
+          onCancel={() => onCancelLasso?.()}
+        />
       )}
       {canPaint && cursor && (
         <span

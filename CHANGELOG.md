@@ -12,6 +12,10 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ### Added
 
+- **Magnetic lasso** — trace an object's boundary and the line **snaps to the edges** (live-wire /
+  Intelligent Scissors): click to start, move along the edge, click to anchor, close the loop. The
+  traced contour seeds the editable contour to refine. Implemented in pure TS (no opencv). The
+  precise counterpart to the rough-box selection.
 - **Editable détourage** — hand-tune the detected contour: *Modifier le contour* opens a focused
   editor (the photo dims) where the outline shows as draggable node handles. **Drag** a node to
   move it, **click an edge** to add one, **double-click** a node to remove it; *Réinitialiser*
