@@ -10,6 +10,10 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-03
+
+A small follow-up to the first release.
+
 ### Added
 
 - An optional **alignment grid** over the 2D photo view (a framing aid to check the object and
@@ -46,5 +50,6 @@ like the object. It runs **100 % in the browser**: the photo never leaves the de
 
 See [`docs/specs-index.md`](docs/specs-index.md) for the full per-feature history (specs 001–032).
 
-[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/mchacher/snapfinity/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mchacher/snapfinity/releases/tag/v1.0.0
