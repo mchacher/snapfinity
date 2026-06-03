@@ -9,6 +9,9 @@ export interface PhotoAnalysisState {
   result: PhotoAnalysis | null;
   /** The current (rotated/cropped) photo to display — updates immediately, before the détourage. */
   framed: FramedPhoto | null;
+  /** Cheap identity of `framed` (the framing) — pass this (not the heavy ImageData) as a render
+   * trigger so the megabyte-sized buffer never goes through React's (dev-mode) reconciler. */
+  framedKey: string | null;
   /** True while `result` reflects an older framing than what's shown (détourage catching up). */
   framingPending: boolean;
   setFile: (file: File | null) => void;
@@ -118,7 +121,7 @@ export function usePhotoAnalysis({
 
   // The détourage is stale (don't draw it) while the result's framing trails what's displayed.
   const framingPending = framed != null && framedKey !== resultKey;
-  return { status, result, framed, framingPending, setFile };
+  return { status, result, framed, framedKey, framingPending, setFile };
 }
 
 /**

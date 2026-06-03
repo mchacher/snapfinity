@@ -55,6 +55,16 @@ freezing on the old image until the whole pipeline finishes:
 independently. Verified: at ~250 ms after Appliquer the canvas already shows the cropped frame
 while the détourage is still pending.
 
+Two things were needed to actually make it instant:
+- **Pure crop is a direct pixel slice** — `transformPhoto` short-circuits `straightenDeg === 0 &&
+  cropRect` to copy the kept rows out of the source `ImageData` (no full-res canvas round-trip),
+  so framing a crop costs a few ms instead of ~200–400 ms on a 12 MP photo.
+- **The `ImageData` is passed to `PhotoOverlay` by ref, not as a prop.** A React **dev-mode**
+  reconcile of the ~20 MB buffer (`addObjectToProperties` + GC in the profile) froze the UI **~3 s
+  on every crop in `npm run dev`** (prod was already ~20 ms). `OutlinePanel` holds the pixels in a
+  `useRef` and passes `imageRef` + cheap `width`/`height`/`frameKey`; the draw effect reads
+  `imageRef.current`, keyed on `frameKey`. Dev crop-paint went 3074 ms → 242 ms.
+
 > The détourage still runs on the **main thread**, so there's a brief freeze *while it computes*
 > (after the cropped image is shown). Removing that freeze is the deferred **vision worker**
 > (perf step 3) — out of scope here.

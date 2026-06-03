@@ -57,7 +57,10 @@ function drawRing(
  * `verify:seg` overlays, so detection + segmentation can be validated visually.
  */
 export function PhotoOverlay({
-  image,
+  imageRef,
+  width,
+  height,
+  frameKey,
   token = null,
   mask = null,
   bbox = null,
@@ -74,8 +77,15 @@ export function PhotoOverlay({
   onCrop,
   onCancelCrop,
 }: {
-  /** The photo to draw + the coordinate space for gestures (the current framed/cropped image). */
-  image: { imageData: ImageData; width: number; height: number };
+  /** The framed/cropped photo pixels, passed **by ref** (not as a prop) so the megabyte-sized
+   * ImageData never goes through React's reconciler — a dev-mode walk of it froze the UI ~3 s on
+   * every crop. The redraw is triggered by the cheap `frameKey` instead. */
+  imageRef: { current: ImageData | null };
+  /** Framed image size (px) — the coordinate space for the gestures. */
+  width: number;
+  height: number;
+  /** Cheap framing identity — changes to trigger a redraw from `imageRef.current`. */
+  frameKey: string | null;
   /** Calibration token circle to draw, or null when there's no (current) detection. */
   token?: PhotoAnalysis['token'] | null;
   /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
@@ -112,7 +122,8 @@ export function PhotoOverlay({
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const { imageData, width, height } = image;
+    const imageData = imageRef.current;
+    if (!imageData) return;
 
     const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
     const cw = Math.max(1, Math.round(width * scale));
@@ -184,7 +195,7 @@ export function PhotoOverlay({
     // clearance offset (the pocket) dashed amber, then the smoothed contour solid accent
     drawRing(ctx, offsetContour, scale, 'rgb(245,158,11)', 2, [7, 5]);
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
-  }, [image, token, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
+  }, [frameKey, width, height, token, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
 
   const canPaint = tool === 'brush' && !!onPaint && !!mask;
   const straightening = tool === 'straighten';
@@ -223,8 +234,8 @@ export function PhotoOverlay({
   const toImg = (e: ReactPointerEvent<HTMLCanvasElement>): Point2D => {
     const rect = e.currentTarget.getBoundingClientRect();
     return [
-      ((e.clientX - rect.left) / rect.width) * image.width,
-      ((e.clientY - rect.top) / rect.height) * image.height,
+      ((e.clientX - rect.left) / rect.width) * width,
+      ((e.clientY - rect.top) / rect.height) * height,
     ];
   };
   /** Display px → normalised [0,1] of the image. */
@@ -256,7 +267,8 @@ export function PhotoOverlay({
 
   const applyCrop = () => {
     if (!cropBox) return;
-    const { width: W, height: H } = image;
+    const W = width;
+    const H = height;
     onCrop?.([cropBox.x * W, cropBox.y * H], [(cropBox.x + cropBox.w) * W, (cropBox.y + cropBox.h) * H]);
   };
 
@@ -316,7 +328,7 @@ export function PhotoOverlay({
       painting.current = false;
     } else if (straightening && drag) {
       const rect = e.currentTarget.getBoundingClientRect();
-      const p1: Point2D = [(drag.sx / rect.width) * image.width, (drag.sy / rect.height) * image.height];
+      const p1: Point2D = [(drag.sx / rect.width) * width, (drag.sy / rect.height) * height];
       const p2 = toImg(e);
       setDrag(null);
       onStraighten?.(p1, p2);

@@ -49,6 +49,10 @@ export function OutlinePanel({
 }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Hold the framed photo's pixels in a ref so the megabyte ImageData is passed to PhotoOverlay
+  // by reference, never through React props (a dev-mode reconcile of it froze the UI ~3 s/crop).
+  const imageRef = useRef<ImageData | null>(null);
+  imageRef.current = photo.framed?.imageData ?? null;
   const [dragging, setDragging] = useState(false);
 
   const openPicker = () => inputRef.current?.click();
@@ -95,7 +99,10 @@ export function OutlinePanel({
         </div>
         <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
           <PhotoOverlay
-            image={framed}
+            imageRef={imageRef}
+            width={framed.width}
+            height={framed.height}
+            frameKey={photo.framedKey}
             token={detourage ? (photo.result?.token ?? null) : null}
             mask={detourage ? (derived?.mask ?? null) : null}
             bbox={detourage ? (derived?.objectBBoxPx ?? null) : null}
