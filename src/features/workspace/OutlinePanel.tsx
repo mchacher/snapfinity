@@ -21,6 +21,10 @@ interface Props {
   onUpload: (file: File) => void;
   /** Paint a disc into the edit layer (mask-space) — value chosen from the brush mode. */
   onPaint: (maskX: number, maskY: number, maskRadius: number, value: number) => void;
+  /** Active photo tool (brush vs framing). */
+  tool: 'brush' | 'straighten' | 'crop';
+  onStraighten: (p1: Point2D, p2: Point2D) => void;
+  onCrop: (p1: Point2D, p2: Point2D) => void;
 }
 
 /**
@@ -37,6 +41,9 @@ export function OutlinePanel({
   scaleMmPerPx,
   onUpload,
   onPaint,
+  tool,
+  onStraighten,
+  onCrop,
 }: Props) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +98,9 @@ export function OutlinePanel({
             onPaint={(mx, my, mr) => onPaint(mx, my, mr, params.brushMode === 'erase' ? EDIT_ERASE : EDIT_ADD)}
             brushSize={params.brushSize}
             brushErase={params.brushMode === 'erase'}
+            tool={tool}
+            onStraighten={onStraighten}
+            onCrop={onCrop}
           />
         </div>
         {photo.status === 'analyzing' && <BusyOverlay label={t('photo.analyzing')} />}

@@ -44,6 +44,9 @@ export function PhotoOverlay({
   onPaint,
   brushSize = 24,
   brushErase = false,
+  tool = 'brush',
+  onStraighten,
+  onCrop,
 }: {
   analysis: PhotoAnalysis;
   /** Isolated-tool mask (full-res 0/255), re-derived at the detection threshold. */
@@ -63,6 +66,12 @@ export function PhotoOverlay({
   onPaint?: (maskX: number, maskY: number, maskRadius: number) => void;
   brushSize?: number;
   brushErase?: boolean;
+  /** Active interaction tool. */
+  tool?: 'brush' | 'straighten' | 'crop';
+  /** Straighten gesture: two points (image px) along a line that should be level. */
+  onStraighten?: (p1: Point2D, p2: Point2D) => void;
+  /** Crop gesture: two opposite corners (image px) of the kept region. */
+  onCrop?: (p1: Point2D, p2: Point2D) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const painting = useRef(false);
@@ -145,45 +154,72 @@ export function PhotoOverlay({
     drawRing(ctx, contour, scale, 'rgb(47,120,212)', 2.5);
   }, [analysis, mask, bbox, contour, offsetContour, maskOpacity, brightness, contrast]);
 
-  const canPaint = !!onPaint && !!mask;
+  const canPaint = tool === 'brush' && !!onPaint && !!mask;
+  const framing = tool === 'straighten' || tool === 'crop';
+  const active = canPaint || framing;
+  const [drag, setDrag] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
 
   const paintAt = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = ref.current;
     if (!canvas || !onPaint || !mask) return;
     const rect = canvas.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
-    const mx = (px / rect.width) * mask.width;
-    const my = (py / rect.height) * mask.height;
+    const mx = ((e.clientX - rect.left) / rect.width) * mask.width;
+    const my = ((e.clientY - rect.top) / rect.height) * mask.height;
     const mr = (brushSize / rect.width) * mask.width;
     onPaint(mx, my, mr);
+  };
+
+  /** Display px → image px (full-res of the transformed photo). */
+  const toImg = (e: ReactPointerEvent<HTMLCanvasElement>): Point2D => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return [
+      ((e.clientX - rect.left) / rect.width) * analysis.width,
+      ((e.clientY - rect.top) / rect.height) * analysis.height,
+    ];
+  };
+
+  const onDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (canPaint) {
+      painting.current = true;
+      paintAt(e);
+    } else if (framing) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setDrag({ sx: x, sy: y, ex: x, ey: y });
+    }
+  };
+  const onMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    if (canPaint && painting.current) paintAt(e);
+    else if (framing && drag) setDrag({ ...drag, ex: e.clientX - rect.left, ey: e.clientY - rect.top });
+  };
+  const onUp = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (canPaint) {
+      painting.current = false;
+    } else if (framing && drag) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const p1: Point2D = [(drag.sx / rect.width) * analysis.width, (drag.sy / rect.height) * analysis.height];
+      const p2 = toImg(e);
+      setDrag(null);
+      if (tool === 'straighten') onStraighten?.(p1, p2);
+      else onCrop?.(p1, p2);
+    }
   };
 
   return (
     <div className="relative inline-flex max-h-full max-w-full">
       <canvas
         ref={ref}
-        className={`max-h-full max-w-full rounded-lg ${canPaint ? 'cursor-none touch-none' : ''}`}
-        onPointerDown={
-          canPaint
-            ? (e) => {
-                painting.current = true;
-                e.currentTarget.setPointerCapture(e.pointerId);
-                paintAt(e);
-              }
-            : undefined
-        }
-        onPointerMove={
-          canPaint
-            ? (e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-                if (painting.current) paintAt(e);
-              }
-            : undefined
-        }
-        onPointerUp={canPaint ? () => (painting.current = false) : undefined}
-        onPointerLeave={canPaint ? () => setCursor(null) : undefined}
+        className={`max-h-full max-w-full rounded-lg ${active ? 'touch-none' : ''} ${
+          canPaint ? 'cursor-none' : framing ? 'cursor-crosshair' : ''
+        }`}
+        onPointerDown={active ? onDown : undefined}
+        onPointerMove={active ? onMove : undefined}
+        onPointerUp={active ? onUp : undefined}
+        onPointerLeave={() => setCursor(null)}
       />
       {canPaint && cursor && (
         <span
@@ -195,6 +231,22 @@ export function PhotoOverlay({
             height: brushSize * 2,
             borderColor: brushErase ? 'rgba(239,68,68,0.9)' : 'rgba(47,120,212,0.9)',
             background: brushErase ? 'rgba(239,68,68,0.12)' : 'rgba(47,120,212,0.12)',
+          }}
+        />
+      )}
+      {tool === 'straighten' && drag && (
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+          <line x1={drag.sx} y1={drag.sy} x2={drag.ex} y2={drag.ey} stroke="rgb(47,120,212)" strokeWidth={2} />
+        </svg>
+      )}
+      {tool === 'crop' && drag && (
+        <span
+          className="pointer-events-none absolute border-2 border-accent-500 bg-accent-500/10"
+          style={{
+            left: Math.min(drag.sx, drag.ex),
+            top: Math.min(drag.sy, drag.ey),
+            width: Math.abs(drag.ex - drag.sx),
+            height: Math.abs(drag.ey - drag.sy),
           }}
         />
       )}

@@ -5,7 +5,7 @@ import { NumberField } from '../../ui/NumberField';
 import { Toggle } from '../../ui/Toggle';
 import { Tabs } from '../../ui/Tabs';
 import { useI18n } from '../../i18n';
-import type { Params } from './Workspace';
+import type { Params, FrameTool } from './Workspace';
 
 const BASE_HEIGHT_MM = 4.75;
 const TOP_RISE_MM = 3.38;
@@ -17,10 +17,14 @@ interface Props {
   tab: 'outline' | 'preview';
   onResetEdits: () => void;
   hasEdits: boolean;
+  /** Active photo framing tool + setters. */
+  frameTool: FrameTool;
+  onFrameTool: (tool: FrameTool) => void;
+  onResetFraming: () => void;
 }
 
 /** Left panel — contextual to the active tab: outline tools vs bin parameters. */
-export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Props) {
+export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits, frameTool, onFrameTool, onResetFraming }: Props) {
   const { t } = useI18n();
 
   if (tab === 'outline') {
@@ -35,6 +39,46 @@ export function ControlsPanel({ params, set, tab, onResetEdits, hasEdits }: Prop
             min={1}
             step={0.1}
           />
+        </Section>
+        <Section title={t('params.framing')}>
+          <div className="mb-2 flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => onFrameTool(frameTool === 'straighten' ? 'none' : 'straighten')}
+              className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                frameTool === 'straighten'
+                  ? 'border-accent-600 bg-accent-50 text-accent-700'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {t('params.straightenPhoto')}
+            </button>
+            <button
+              type="button"
+              onClick={() => onFrameTool(frameTool === 'crop' ? 'none' : 'crop')}
+              className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                frameTool === 'crop'
+                  ? 'border-accent-600 bg-accent-50 text-accent-700'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {t('params.crop')}
+            </button>
+          </div>
+          {frameTool === 'straighten' && <p className="mb-1 text-xs text-slate-400">{t('params.straightenHint')}</p>}
+          {frameTool === 'crop' && <p className="mb-1 text-xs text-slate-400">{t('params.cropHint')}</p>}
+          <div className="flex items-center justify-between py-1 text-sm">
+            <span className="text-slate-600">{t('params.angle')}</span>
+            <span className="font-mono text-slate-800">{params.straightenDeg.toFixed(1)}°</span>
+          </div>
+          <button
+            type="button"
+            onClick={onResetFraming}
+            disabled={params.straightenDeg === 0 && !params.cropRect}
+            className="mt-1 text-xs font-medium text-accent-700 hover:underline disabled:text-slate-300 disabled:no-underline"
+          >
+            {t('params.resetFraming')}
+          </button>
         </Section>
         <Section title={t('params.image')}>
           <Slider
