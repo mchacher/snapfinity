@@ -10,8 +10,28 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Changed
+
+- **Détourage is now an explicit selection (Photoshop-like).** Loading a photo only **detects the
+  token** — it no longer tries to auto-select the object. **Sélection** presents two clear paths:
+  **Créer la sélection** — 🪄 *Détecter l'objet* (auto) or *Sélectionner à la main* (lasso) — then
+  **Ajuster** it (Points · Pinceau · Seuil) and *Effacer* to start over. Faster load, calmer
+  preview, and the 3D/pocket only build once you've made a selection.
+- **Cleaner détourage panel** — the left panel is reorganized into the two sections the workflow
+  actually has: **Image** (Cadrage + Réglages) and **Détourage** (Calibrage Ø token → **Sélection**
+  → Retouche). **Sélection** frames the choice Photoshop-style — grab the object **automatically**
+  (the magic detection: Auto / Standard / Contours) **or manually** with the **Lasso** — and
+  **Retouche** refines the current selection (Modifier le contour, Pinceau). All fine tuning and
+  display toggles fold into a single collapsed
+  **Réglages avancés** group, so the resting panel is calm (was 6 flat sections with an overloaded
+  Détourage). Section headers are accent-blue and subsections are indented for a clear hierarchy.
+
 ### Added
 
+- **Magnetic lasso** — trace an object's boundary and the line **snaps to the edges** (live-wire /
+  Intelligent Scissors): click to start, move along the edge, click to anchor, close the loop. The
+  traced contour seeds the editable contour to refine. Implemented in pure TS (no opencv). The
+  precise counterpart to the rough-box selection.
 - **Editable détourage** — hand-tune the detected contour: *Modifier le contour* opens a focused
   editor (the photo dims) where the outline shows as draggable node handles. **Drag** a node to
   move it, **click an edge** to add one, **double-click** a node to remove it; *Réinitialiser*

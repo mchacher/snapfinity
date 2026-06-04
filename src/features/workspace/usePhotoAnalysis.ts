@@ -19,6 +19,10 @@ export interface PhotoAnalysisState {
   /** True while `result` reflects an older framing than what's shown (détourage catching up). */
   framingPending: boolean;
   setFile: (file: File | null) => void;
+  /** Run the heavy object segmentation now (the magic-wand selection — spec 039). */
+  requestSegment: () => void;
+  /** Drop the segmentation (back to token-only) — clearing the auto selection. */
+  clearSegment: () => void;
 }
 
 /**
@@ -52,9 +56,18 @@ export function usePhotoAnalysis({
   const [framed, setFramed] = useState<FramedPhoto | null>(null);
   const [framedKey, setFramedKey] = useState<string | null>(null);
   const [resultKey, setResultKey] = useState<string | null>(null);
+  // Whether to run the heavy object segmentation. Off on load (token only); the magic wand turns it
+  // on; a new photo turns it back off (spec 039).
+  const [segmentEnabled, setSegmentEnabled] = useState(false);
   const lastFile = useRef<File | null>(null);
+  const lastSeg = useRef(false);
 
   const key = framingKey(straightenDeg, cropRect);
+
+  // New photo → back to token-only (the object isn't auto-selected).
+  useEffect(() => {
+    setSegmentEnabled(false);
+  }, [file]);
 
   // FAST: show the rotated/cropped photo immediately (transform only — no inference). Re-runs only
   // when the framing changes, so brightness/contrast don't churn it.
@@ -93,13 +106,22 @@ export function usePhotoAnalysis({
     }
     const freshFile = lastFile.current !== file;
     lastFile.current = file;
+    const segToggled = lastSeg.current !== segmentEnabled;
+    lastSeg.current = segmentEnabled;
     let cancelled = false;
     setStatus('analyzing');
     const run = () =>
       void (async () => {
         try {
           const { analyzePhoto } = await import('../../vision/analyze');
-          const r = await analyzePhoto(file, { flatten, brightness, contrast, straightenDeg, cropRect });
+          const r = await analyzePhoto(file, {
+            flatten,
+            brightness,
+            contrast,
+            straightenDeg,
+            cropRect,
+            segment: segmentEnabled,
+          });
           if (!cancelled) {
             setResult(r);
             setResultKey(key);
@@ -110,22 +132,33 @@ export function usePhotoAnalysis({
           if (!cancelled) setStatus('error');
         }
       })();
-    if (freshFile) {
+    // A new photo or a deliberate segment toggle (magic wand / clear) runs now; only adjustment
+    // tweaks are debounced.
+    if (freshFile || segToggled) {
       run();
       return () => {
         cancelled = true;
       };
     }
-    const timer = setTimeout(run, 450); // adjustment change → re-infer, debounced
+    const timer = setTimeout(run, 450);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [file, flatten, brightness, contrast, straightenDeg, cropRect, key]);
+  }, [file, flatten, brightness, contrast, straightenDeg, cropRect, key, segmentEnabled]);
 
   // The détourage is stale (don't draw it) while the result's framing trails what's displayed.
   const framingPending = framed != null && framedKey !== resultKey;
-  return { status, result, framed, framedKey, framingPending, setFile };
+  return {
+    status,
+    result,
+    framed,
+    framedKey,
+    framingPending,
+    setFile,
+    requestSegment: () => setSegmentEnabled(true),
+    clearSegment: () => setSegmentEnabled(false),
+  };
 }
 
 /**
@@ -138,14 +171,19 @@ export function useDerivedMask(
   result: PhotoAnalysis | null,
   threshold: number,
   mode: SegmentMode = 'auto',
-): DerivedMask | null {
+): { derived: DerivedMask | null; deriving: boolean } {
   const [derived, setDerived] = useState<DerivedMask | null>(null);
+  // True while a re-derive is pending/running — drives a small spinner when the user tweaks the
+  // threshold/method (the work is brief but synchronous, so a cue is reassuring).
+  const [deriving, setDeriving] = useState(false);
   const lastResult = useRef<PhotoAnalysis | null>(null);
 
   useEffect(() => {
-    if (!result) {
+    // No result, or the object hasn't been segmented yet (token-only load) → no mask (spec 039).
+    if (!result || result.saliency == null) {
       lastResult.current = null;
       setDerived(null);
+      setDeriving(false);
       return;
     }
     // A fresh photo derives immediately (no perceptible lag on open); only threshold/mode tweaks
@@ -153,10 +191,22 @@ export function useDerivedMask(
     const immediate = lastResult.current !== result;
     lastResult.current = result;
     let cancelled = false;
+    setDeriving(true);
+    const shownAt = Date.now();
     const run = () =>
       void (async () => {
         const { deriveMask } = await import('../../vision/analyze');
-        if (!cancelled) setDerived(deriveMask(result, threshold, mode));
+        const d = deriveMask(result, threshold, mode);
+        if (cancelled) return;
+        setDerived(d);
+        // The compute itself is brief (a single re-threshold); keep the spinner on screen for a
+        // minimum so the user actually sees the cue rather than a sub-100ms flash.
+        const remaining = 400 - (Date.now() - shownAt);
+        if (remaining <= 0) setDeriving(false);
+        else
+          setTimeout(() => {
+            if (!cancelled) setDeriving(false);
+          }, remaining);
       })();
     if (immediate) {
       run();
@@ -171,5 +221,5 @@ export function useDerivedMask(
     };
   }, [result, threshold, mode]);
 
-  return derived;
+  return { derived, deriving };
 }

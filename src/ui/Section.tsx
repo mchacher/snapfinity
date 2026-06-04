@@ -17,7 +17,7 @@ export function Section({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-1.5 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-700"
+        className="flex w-full items-center gap-1.5 px-4 py-3 text-xs font-bold uppercase tracking-wider text-accent-700 transition-colors hover:text-accent-600"
       >
         <ChevronDown size={14} className={`transition-transform ${open ? '' : '-rotate-90'}`} />
         {title}

@@ -1,6 +1,8 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImageUp, Loader2 } from 'lucide-react';
 import { Chip } from '../../ui/Chip';
+import { Tabs } from '../../ui/Tabs';
+import { Slider } from '../../ui/Slider';
 import { BusyOverlay } from '../../ui/BusyOverlay';
 import { PhotoOverlay } from './PhotoOverlay';
 import { useI18n } from '../../i18n';
@@ -18,14 +20,26 @@ interface Props {
   contour: Point2D[];
   offsetContour: Point2D[];
   scaleMmPerPx: number | null;
+  /** A mask re-derive (threshold/method change) is in progress → small spinner on the photo. */
+  computing: boolean;
   onUpload: (file: File) => void;
+  /** Param setter — the tool options bar (over the photo) writes through it. */
+  set: <K extends keyof Params>(key: K, value: Params[K]) => void;
+  /** Reset handlers for the tool options bars (Points / Pinceau). */
+  onResetContour: () => void;
+  onResetEdits: () => void;
+  hasEdits: boolean;
   /** Paint a disc into the edit layer (mask-space) — value chosen from the brush mode. */
   onPaint: (maskX: number, maskY: number, maskRadius: number, value: number) => void;
-  /** Active photo tool (brush vs framing vs contour edit). */
-  tool: 'brush' | 'straighten' | 'crop' | 'contour';
+  /** Active tool. `none`/`lissage`/`redresser` = no direct photo interaction (the last two only
+   * show their options bar); the others drive the overlay. */
+  tool: 'none' | 'brush' | 'straighten' | 'crop' | 'contour' | 'lasso' | 'lissage' | 'redresser';
   /** Editable contour nodes (full-res px) + commit, in `contour` mode (spec 035). */
   editNodes?: Point2D[];
   onEditNodes?: (ring: Point2D[]) => void;
+  /** Magnetic lasso (spec 037): closed contour on completion + cancel. */
+  onLasso?: (ring: Point2D[]) => void;
+  onCancelLasso?: () => void;
   onStraighten: (p1: Point2D, p2: Point2D) => void;
   onCrop: (p1: Point2D, p2: Point2D) => void;
   onCancelCrop: () => void;
@@ -43,11 +57,18 @@ export function OutlinePanel({
   contour,
   offsetContour,
   scaleMmPerPx,
+  computing,
   onUpload,
+  set,
+  onResetContour,
+  onResetEdits,
+  hasEdits,
   onPaint,
   tool,
   editNodes,
   onEditNodes,
+  onLasso,
+  onCancelLasso,
   onStraighten,
   onCrop,
   onCancelCrop,
@@ -80,29 +101,75 @@ export function OutlinePanel({
     // The détourage (mask/contour/token) is only drawn once it matches the displayed framing —
     // while it catches up after a crop/straighten, we show the freshly framed photo on its own.
     const detourage = !photo.framingPending;
-    return (
-      <div className="relative h-full">
-        <div className="absolute inset-x-3 top-3 z-10 flex flex-wrap items-center gap-2">
-          {photo.result && (
-            <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
-              {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
-            </Chip>
-          )}
-          {scaleMmPerPx !== null && (
-            <Chip tone="neutral">
-              {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
-            </Chip>
-          )}
-          <span className="flex-1" />
+    // The active tool's options — shown in a toolbar over the photo (not under the tool in the panel).
+    const toolBar =
+      // Pinceau + Points keep their options on the photo (interactive tools); Lissage / Redresser
+      // are simple settings and live in the left panel.
+      tool === 'contour' ? (
+        <>
+          <span className="text-xs leading-snug text-slate-500">{t('params.contourHint')}</span>
           <button
             type="button"
-            onClick={openPicker}
-            className="rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur transition-colors hover:bg-white"
+            onClick={onResetContour}
+            className="shrink-0 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50"
           >
-            {t('photo.replace')}
+            {t('params.contourReset')}
           </button>
+        </>
+      ) : tool === 'brush' ? (
+        <>
+          <Tabs
+            tabs={[
+              { id: 'add', label: t('params.brushAdd') },
+              { id: 'erase', label: t('params.brushErase') },
+            ]}
+            active={params.brushMode}
+            onChange={(id) => set('brushMode', id as 'add' | 'erase')}
+          />
+          <div className="w-64">
+            <Slider label={t('params.brushSize')} value={params.brushSize} onChange={(v) => set('brushSize', v)} min={5} max={80} step={1} />
+          </div>
+          <button
+            type="button"
+            onClick={onResetEdits}
+            disabled={!hasEdits}
+            className="shrink-0 text-xs font-medium text-accent-700 hover:underline disabled:text-slate-300 disabled:no-underline"
+          >
+            {t('params.reset')}
+          </button>
+        </>
+      ) : null;
+    return (
+      <div className="flex h-full flex-col gap-2">
+        {/* Real toolbar zone above the photo: token/scale chips + Replace, and the active tool's
+            contextual bar (e.g. the brush options) on a second row. */}
+        <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {photo.result && (
+              <Chip tone={photo.result.token.found ? 'ok' : 'warn'}>
+                {t('photo.token')} · {photo.result.token.found ? t('photo.tokenFound') : t('photo.tokenMissing')}
+              </Chip>
+            )}
+            {scaleMmPerPx !== null && (
+              <Chip tone="neutral">
+                {t('photo.scale')} · {scaleMmPerPx.toFixed(3)} mm/px
+              </Chip>
+            )}
+            <span className="flex-1" />
+            <button
+              type="button"
+              onClick={openPicker}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              {t('photo.replace')}
+            </button>
+          </div>
+          {toolBar && (
+            <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-2">{toolBar}</div>
+          )}
         </div>
-        <div className="flex h-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+        {/* Photo canvas — fills the rest of the space. */}
+        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
           <PhotoOverlay
             imageRef={imageRef}
             width={framed.width}
@@ -113,7 +180,7 @@ export function OutlinePanel({
             bbox={detourage ? (derived?.objectBBoxPx ?? null) : null}
             contour={detourage ? contour : []}
             offsetContour={detourage ? offsetContour : []}
-            maskOpacity={params.showMask ? params.maskOpacity : 0}
+            maskOpacity={params.maskOpacity}
             showGrid={params.showGrid}
             brightness={params.brightness}
             contrast={params.contrast}
@@ -123,12 +190,15 @@ export function OutlinePanel({
             tool={tool}
             editNodes={editNodes}
             onEditNodes={onEditNodes}
+            onLasso={onLasso}
+            onCancelLasso={onCancelLasso}
             onStraighten={onStraighten}
             onCrop={onCrop}
             onCancelCrop={onCancelCrop}
           />
+          {/* Centered waiting overlay — for the full analysis AND a threshold/method re-derive. */}
+          {(photo.status === 'analyzing' || computing) && <BusyOverlay label={t('photo.detourage')} />}
         </div>
-        {photo.status === 'analyzing' && <BusyOverlay label={t('photo.detourage')} />}
         {hidden}
       </div>
     );
