@@ -67,7 +67,13 @@ Agreed order (each becomes its own spec `NNN` + `feat/` branch + PR, via the
 | 5 | **Logo / favicon + site publication** | asset + infra/CI | S + M | SVG logo/favicon (iterate on taste), then deploy to GitHub/Cloudflare Pages: Vite `base`, SPA routing, ~35 MB WASM payload, caching (no COOP/COEP — `numThreads=1`). Makes it usable by others. |
 | 6 | **Revisit the calibration token?** | vision/calib + physical | R&D | Exploratory: more robust fiducial? different size? ArUco/AprilTag? **Decide before any spec.** Not urgent while detection holds. |
 
-## Contour extraction (next iteration)
+## Contour extraction (delivered — and extended)
+
+> **Status: done and well past this.** 013 (outer contour + smoothing + clearance + live overlay) and
+> 014 (mask brush) shipped the plan below; the détourage then became fully editable and **explicit** —
+> 021 (straighten edges), 035 (editable node contour), 037 (magnetic lasso), 039 (on-demand selection:
+> the object is segmented only when asked, and auto + manual selections share one pipeline). See
+> `docs/specs-index.md` for the current state.
 
 Bridges segmentation (it 8a, spec 012) → pocket (it 3 CAD). The mask is binary at pixel
 resolution, so its raw contour is jagged → a pixelated pocket. And on hard cases (chrome on
