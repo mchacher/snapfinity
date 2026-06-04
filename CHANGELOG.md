@@ -10,6 +10,14 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-05
+
+### Changed
+
+- **Landing hero.** The before/after now shows the calibration scene as it really is: the object (an
+  AirPods case) and the calibration token laid side by side on a sheet, next to a real 3D render of
+  the matching Gridfinity bin.
+
 ## [1.1.0] - 2026-06-04
 
 ### Changed
