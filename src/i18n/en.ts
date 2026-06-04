@@ -114,11 +114,11 @@ export const en = {
     hint: 'Live preview & export coming next.',
   },
   plan: {
-    title: 'Snapfinity — 1:1 plan',
-    print: 'Print at 100% — disable "fit to page"',
+    title: 'Snapfinity · 1:1 plan',
+    print: 'Print at 100%, disable "fit to page"',
     object: 'Object',
     pocket: 'Pocket (clearance)',
-    ruler: '50 mm — scale check',
+    ruler: '50 mm · scale check',
     page: 'Page',
   },
   viewer: {
@@ -140,7 +140,7 @@ export const en = {
     badge: '100% in your browser · no server',
     title: 'Turn a photo into a custom Gridfinity bin',
     subtitle:
-      'Photograph an object next to the calibration token. Snapfinity derives a Gridfinity bin with a pocket shaped exactly like it — ready to 3D-print.',
+      'Photograph an object next to the calibration token. Snapfinity derives a Gridfinity bin hollowed exactly to its shape, ready to 3D-print.',
     start: 'Get started',
     getToken: 'Print the token',
     howTitle: 'How it works',
@@ -149,16 +149,16 @@ export const en = {
       'Lay the object and the token flat on a plain, evenly-lit light background, and shoot from straight above.',
     step2Title: 'Detect & calibrate',
     step2Body:
-      'The token sets the scale and the object’s outline is detected automatically — all in your browser.',
+      'The token sets the scale, the object’s outline is detected automatically. It all runs in your browser.',
     step3Title: 'Generate & export',
     step3Body: 'A Gridfinity bin hollowed to the object’s shape, ready to export as STL or STEP.',
     tokenTitle: 'You need the calibration token',
     tokenBody:
-      'A 76.2 mm disc to 3D-print — it gives Snapfinity the scale, so without it there is no calibration. Print at 100%, then measure your token’s diameter and enter it in the app.',
+      'A 76.2 mm disc to 3D-print. It gives Snapfinity the scale: without it, there is no calibration. Print at 100%, then measure your token’s diameter and enter it in the app.',
     tokenStl: 'Download STL',
     tokenStep: 'STEP source',
     privacyTitle: 'Private by design',
-    privacyBody: 'Your photo never leaves your device — no upload, no server, no tracking.',
+    privacyBody: 'Your photo never leaves your device: no upload, no server, no tracking.',
     openSource: 'Free & open-source',
     madeBy: 'by Marc Chachereau',
   },
