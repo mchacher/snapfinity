@@ -35,13 +35,22 @@ detection on real photos. The product is built **once**, in WASM.
 
 ```
 📱 photo (tool + token)
-  → opencv.js     detect token → calibrate mm/px → extract tool contour
-    → clipper      offset the contour (printing clearance)
-      → replicad   build the parametric Gridfinity foot, tile L×P → walls (N×7mm)
+  → opencv.js     detect token → calibrate mm/px        ← runs on load
+    → selection   on demand: u2netp (magic wand) OR lasso→mask → editable contour
+      → clipper    offset the contour (printing clearance)
+        → replicad build the parametric Gridfinity foot, tile L×P → walls (N×7mm)
                    → + stacking lip → − tool pocket
-        → three.js live 3D preview
-          → export STL / STEP / 3MF
+          → three.js live 3D preview
+            → export STL / STEP / 3MF
 ```
+
+**Selection is on demand (spec 039).** Loading a photo only detects the **token** (for scale); the
+object is segmented only when the user asks. They **create** a selection — 🪄 *Detect object*
+(u2netp, deferred behind `analyzePhoto({ segment })` so `saliency` is nullable) **or** the **magnetic
+lasso** (a traced ring rasterized to a mask via `vision/raster maskFromRing`) — then **adjust** it
+(node editor, brush, smoothing, straighten). Auto and manual share one pipeline
+(`baseMask = manualMask ?? derived`), so every tool applies to both; the pocket/3D build only once a
+selection exists (`hasSelection`). See `specs/039-on-demand-selection/architecture.md`.
 
 ## 4. Component choices
 

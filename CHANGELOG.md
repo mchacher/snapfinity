@@ -12,19 +12,19 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ### Changed
 
-- **Détourage is now an explicit selection (Photoshop-like).** Loading a photo only **detects the
-  token** — it no longer tries to auto-select the object. **Sélection** presents two clear paths:
-  **Créer la sélection** — 🪄 *Détecter l'objet* (auto) or *Sélectionner à la main* (lasso) — then
-  **Ajuster** it (Points · Pinceau · Seuil) and *Effacer* to start over. Faster load, calmer
-  preview, and the 3D/pocket only build once you've made a selection.
-- **Cleaner détourage panel** — the left panel is reorganized into the two sections the workflow
-  actually has: **Image** (Cadrage + Réglages) and **Détourage** (Calibrage Ø token → **Sélection**
-  → Retouche). **Sélection** frames the choice Photoshop-style — grab the object **automatically**
-  (the magic detection: Auto / Standard / Contours) **or manually** with the **Lasso** — and
-  **Retouche** refines the current selection (Modifier le contour, Pinceau). All fine tuning and
-  display toggles fold into a single collapsed
-  **Réglages avancés** group, so the resting panel is calm (was 6 flat sections with an overloaded
-  Détourage). Section headers are accent-blue and subsections are indented for a clear hierarchy.
+- **Détourage is now an explicit, on-demand selection (Photoshop-like).** Loading a photo only
+  **detects the token** (for scale) — the object is no longer auto-segmented, so loading is faster
+  and the preview stays calm. You **create** a selection — 🪄 *Detect object* (the magic wand: method
+  Standard/Edges + threshold) **or** *Select by hand* (the magnetic lasso) — then **adjust** it with
+  the **same tools whichever path you took**: **Points** (drag the outline), **Brush** (paint the
+  mask), **Smoothing**, **Straighten edges**, plus **Clearance** and mask **Opacity**; *Clear* starts
+  over. A hand-traced lasso is rasterized into a mask so it behaves exactly like an automatic
+  selection. The 3D/pocket build only once a selection exists.
+- **Reworked photo workspace.** A real toolbar **above** the photo (token/scale chips · the active
+  tool's options, e.g. the brush bar · *Replace photo*), the canvas below, and **zoom + pan**
+  controls — and the photo is **contain-fit** so it never distorts on small screens. The left panel
+  is reorganized into **Image** (framing + adjustments) and **Détourage** (calibration → a 3-step
+  selection wizard), with a rebalanced type scale.
 
 ### Added
 

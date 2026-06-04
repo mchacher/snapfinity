@@ -55,3 +55,24 @@ Tracer bullet with **manual parameters** (vision wiring is it 6/7):
 3. **Browser replicad init** + mesh the bin → three.js preview (live from params).
 4. Export STL (browser download).
 5. Photo drop zone + detection **placeholder** (real detection later).
+
+## Détourage workspace — current (spec 039)
+
+The structure above still holds (left controls panel · 3D viewer right · accent blue · mono values).
+What evolved is the **Détourage** tab — détourage is now an **explicit, on-demand selection** rather
+than an auto-detect step:
+
+- **Flow step 2 is now a selection, not auto-detect.** Loading a photo only detects the **token**
+  (`Token ✓ · Échelle …`). The object is selected on demand via a **3-step wizard** in the left
+  panel: **Create** (🪄 *Detect object* — method Standard/Edges + Seuil — or *Select by hand* with the
+  magnetic lasso) → **Method** (auto only) → **Adjust** (Points, Brush, Smoothing, Straighten, plus
+  Clearance + mask Opacity). Manual and auto selections share one pipeline (the lasso is rasterized
+  to a mask), so all tools apply to both.
+- **Photo area = toolbar + canvas.** A real toolbar **above** the photo (token/scale chips · the
+  active tool's contextual options, e.g. the brush bar · *Replace*), the canvas below, and **zoom +
+  pan** controls bottom-right. The photo is **contain-fit** in JS so it never distorts on small
+  screens.
+- **Left-panel sections**: **Image** (Cadrage: rotate/crop/straighten/grid; Réglages:
+  de-shadow/brightness/contrast) and **Détourage** (Calibrage Ø token → the selection wizard).
+- **Type scale**: a "kicker" hierarchy — section titles 12 px accent-uppercase, subsections 11 px
+  slate, body 13 px, fine print 11 px (titles intentionally smaller than content).
