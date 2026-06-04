@@ -90,7 +90,7 @@ export function LassoEditor({
 
   const eng = engine.current;
   const displayScale = eng && dispW > 0 ? dispW / eng.ww : 1;
-  const dotR = 5 / displayScale;
+  const dotR = 2.5 / displayScale;
   const closeR = 14 / displayScale;
 
   const toWork = (clientX: number, clientY: number): Point2D => {

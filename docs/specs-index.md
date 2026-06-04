@@ -44,5 +44,7 @@ Every feature is documented under `specs/NNN-name/` (`spec.md` + `architecture.m
 
 | 038 | [controls-ux](../specs/038-controls-ux/) | In review | **Controls panel reorganization** — the outline tab goes from 6 flat sections (overloaded Détourage) to the **two** the user thinks in: **Image** (Cadrage + Réglages) and **Détourage** (Méthode → Retouche, advanced tuning + display folded into collapsed disclosures). Chosen from 3 proposals (design panel → Proposition B). New `ui/Disclosure`; pure reorg, no behavior change. Bundled with 037. Iteration 26. |
 
+| 039 | [on-demand-selection](../specs/039-on-demand-selection/) | In review | **On-demand selection** — loading a photo only **detects the token**; the object is no longer auto-segmented. The user makes a selection explicitly in **Détourage → Sélection**: 🪄 magic wand (`Détecter l'objet` + Seuil) or Lasso, then refines by hand (Manuel = points + brush); `Effacer` clears it. u2netp deferred behind `segment` flag (`saliency` nullable), `useDerivedMask` gated; pocket/3D build only once a selection exists. Iteration 27. |
+
 > Workflow: use the `snapfinity-feature` skill. One feature = one spec = one `feat/`
 > branch = one PR. Never skip a gate.

@@ -21,8 +21,10 @@ export interface PhotoAnalysis {
   /** Calibration scale, or `null` when no token was found. */
   scaleMmPerPx: number | null;
   token: { found: boolean } & Partial<TokenCircle> & { score?: number };
-  /** Raw u2netp saliency map (SEG_SIZE²) — the mask is re-derived from it at any threshold. */
-  saliency: Float32Array;
+  /** Raw u2netp saliency map (SEG_SIZE²) — the mask is re-derived from it at any threshold.
+   * **`null` until the object is actually segmented** (on load we only detect the token; the heavy
+   * u2netp runs on demand when the user reaches for the magic-wand selection — spec 039). */
+  saliency: Float32Array | null;
 }
 
 /** Mask-dependent results, re-derived from the saliency at the chosen detection threshold. */
@@ -32,6 +34,9 @@ export interface DerivedMask {
   objectBBoxPx: BBox | null;
   /** Outer contour of the tool (full-res px); `[]` when no object. */
   outline: Point2D[];
+  /** The method actually used (Auto resolves to one of these) — so the UI presents the active one
+   * rather than the meaningless "Auto" (spec 039). Set by `deriveMask`. */
+  resolvedMode?: 'standard' | 'edges';
 }
 
 // `FramedPhoto` + `framingKey` now live in `./photo-transform` (pure, no WASM) — re-exported here
@@ -51,6 +56,9 @@ export interface AnalyzeOptions {
   straightenDeg?: number;
   /** Framing: crop to this normalised rect (of the rotated image) before analysis. */
   cropRect?: CropRect | null;
+  /** Run the heavy u2netp object segmentation. `false` → token detection only (`saliency: null`),
+   * so loading a photo doesn't try to select the object (spec 039). Defaults to `true`. */
+  segment?: boolean;
 }
 
 let refPromise: Promise<Mat> | null = null;
@@ -92,7 +100,7 @@ interface FramedCache {
 let framedCache: { file: Blob; framed: FramedCache } | null = null;
 
 export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Promise<PhotoAnalysis> {
-  const { tokenOdMm = TOKEN_OD_MM, flatten = 0, brightness = 0, contrast = 0, straightenDeg = 0, cropRect = null } = options;
+  const { tokenOdMm = TOKEN_OD_MM, flatten = 0, brightness = 0, contrast = 0, straightenDeg = 0, cropRect = null, segment = true } = options;
   await loadOpenCv();
 
   if (originalCache?.file !== file) {
@@ -110,13 +118,18 @@ export async function analyzePhoto(file: Blob, options: AnalyzeOptions = {}): Pr
   }
   const c = framedCache.framed;
 
-  // Pre-process the model input only (tiny 320² buffer): flatten the background to kill soft
-  // shadows, then the optional brightness/contrast. The displayed photo is left untouched
-  // (flatten would only wash it out); brightness/contrast are mirrored in the overlay.
-  let segInput: Uint8ClampedArray = c.seg320;
-  if (flatten > 0) segInput = flattenRgba(segInput, SEG_SIZE, flatten);
-  if (brightness !== 0 || contrast !== 0) segInput = adjustRgba(segInput, brightness, contrast);
-  const saliency = await runSaliency(segInput);
+  // Object segmentation (the heavy u2netp pass) is deferred: on load we only need the token, so the
+  // photo isn't auto-selected. It runs on demand (the magic-wand selection — spec 039).
+  let saliency: Float32Array | null = null;
+  if (segment) {
+    // Pre-process the model input only (tiny 320² buffer): flatten the background to kill soft
+    // shadows, then the optional brightness/contrast. The displayed photo is left untouched
+    // (flatten would only wash it out); brightness/contrast are mirrored in the overlay.
+    let segInput: Uint8ClampedArray = c.seg320;
+    if (flatten > 0) segInput = flattenRgba(segInput, SEG_SIZE, flatten);
+    if (brightness !== 0 || contrast !== 0) segInput = adjustRgba(segInput, brightness, contrast);
+    saliency = await runSaliency(segInput);
+  }
 
   return {
     imageData: c.imageData,
@@ -168,9 +181,14 @@ export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMod
       ? { centerPx: { x: a.token.centerPx.x * s, y: a.token.centerPx.y * s }, radiusPx: a.token.radiusPx * s }
       : null;
 
+  // Without a saliency map (object not segmented yet — spec 039) only the edge route is possible.
+  const saliency = a.saliency;
+  const effMode: SegmentMode = saliency == null ? 'edges' : mode;
+
   // The two candidate masks, each at the working resolution, cleaned (token-out + largest blob).
   const buildU2netp = (): Mat => {
-    const mask320 = saliencyToMask(a.saliency, threshold);
+    if (saliency == null) throw new Error('deriveMask: u2netp route without a saliency map');
+    const mask320 = saliencyToMask(saliency, threshold);
     const maskSmall = cv.matFromArray(SEG_SIZE, SEG_SIZE, cv.CV_8UC1, Array.from(mask320));
     const m = new cv.Mat();
     cv.resize(maskSmall, m, new cv.Size(ww, wh), 0, 0, cv.INTER_NEAREST);
@@ -185,11 +203,15 @@ export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMod
   };
 
   // Pick the source: forced (standard/edges) or Auto (only switch when u2netp clearly failed).
+  // `resolvedMode` records which one actually ran, so the UI can present the active method.
   let maskWork: Mat;
-  if (mode === 'standard') {
+  let resolvedMode: 'standard' | 'edges';
+  if (effMode === 'standard') {
     maskWork = buildU2netp();
-  } else if (mode === 'edges') {
+    resolvedMode = 'standard';
+  } else if (effMode === 'edges') {
     maskWork = buildEdges();
+    resolvedMode = 'edges';
   } else {
     const u = buildU2netp();
     const e = buildEdges();
@@ -204,6 +226,7 @@ export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMod
     const pick = chooseSegmentMode(uf, ef, bboxRatio);
     maskWork = pick === 'edges' ? e : u;
     (pick === 'edges' ? u : e).delete();
+    resolvedMode = pick === 'edges' ? 'edges' : 'standard';
   }
 
   const maskData = new Uint8Array(maskWork.data);
@@ -218,7 +241,7 @@ export function deriveMask(a: PhotoAnalysis, threshold: number, mode: SegmentMod
     ? { x: bbox.x * inv, y: bbox.y * inv, w: bbox.w * inv, h: bbox.h * inv }
     : null;
 
-  return { mask: { data: maskData, width: ww, height: wh }, objectBBoxPx, outline };
+  return { mask: { data: maskData, width: ww, height: wh }, objectBBoxPx, outline, resolvedMode };
 }
 
 /**

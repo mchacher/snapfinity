@@ -35,7 +35,7 @@ export function NumberField({ label, value, onChange, unit, min, max, step, acti
 
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
-      <span className="text-sm text-slate-600">{label}</span>
+      <span className="text-[13px] text-slate-600">{label}</span>
       <span className="flex items-center gap-1.5">
         <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 focus-within:border-accent-500">
           <input
@@ -49,9 +49,9 @@ export function NumberField({ label, value, onChange, unit, min, max, step, acti
             onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
-            className="w-14 bg-transparent text-right font-mono text-sm text-slate-800 outline-none"
+            className="w-14 bg-transparent text-right font-mono text-[13px] text-slate-800 outline-none"
           />
-          {unit && <span className="font-mono text-xs text-slate-400">{unit}</span>}
+          {unit && <span className="font-mono text-[11px] text-slate-400">{unit}</span>}
         </span>
         {action}
       </span>

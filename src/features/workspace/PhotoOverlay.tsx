@@ -1,11 +1,12 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Hand, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import type { PhotoAnalysis } from '../../vision/analyze';
 import type { BBox } from '../../vision/mask';
 import type { Point2D } from '../../core/offset';
@@ -124,8 +125,8 @@ function ContourEditor({
   }, []);
 
   const displayScale = dispW > 0 ? dispW / width : 1;
-  const nodeR = 7 / displayScale; // ~7 px on-screen handle radius, expressed in image px
-  const hitR = 14 / displayScale; // ~14 px on-screen grab radius
+  const nodeR = 4.4 / displayScale; // ~4.4 px on-screen handle radius (25% bigger), in image px
+  const hitR = 14 / displayScale; // ~14 px on-screen grab radius (kept generous for easy grabbing)
   const view = drag ? drag.nodes : nodes;
 
   const toImg = (clientX: number, clientY: number): Point2D => {
@@ -253,8 +254,8 @@ export function PhotoOverlay({
   onPaint?: (maskX: number, maskY: number, maskRadius: number) => void;
   brushSize?: number;
   brushErase?: boolean;
-  /** Active interaction tool. */
-  tool?: 'brush' | 'straighten' | 'crop' | 'contour' | 'lasso';
+  /** Active interaction tool (`none`/`lissage`/`redresser` = display only, no editing). */
+  tool?: 'none' | 'brush' | 'straighten' | 'crop' | 'contour' | 'lasso' | 'lissage' | 'redresser';
   /** Editable-contour nodes (full-res px) shown in `contour` mode. */
   editNodes?: Point2D[];
   /** Commit an edited node ring (move / insert / delete). */
@@ -271,8 +272,55 @@ export function PhotoOverlay({
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLCanvasElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const painting = useRef(false);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  // Fit the photo into the available container space, preserving aspect (object-contain math done
+  // in JS so the wrapper is exactly the displayed size → the overlays line up, no distortion).
+  const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
+  // Zoom + pan (to inspect/edit precisely). Applied as a CSS transform on the wrapper, so the canvas
+  // and all overlays move together and the getBoundingClientRect-based coordinate math still maps
+  // correctly. Reset whenever the framing/photo changes.
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panMode, setPanMode] = useState(false);
+  const panStart = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setPanMode(false);
+  }, [frameKey]);
+  const clampPan = (z: number, x: number, y: number) => {
+    const mx = fit ? ((z - 1) * fit.w) / 2 : 0;
+    const my = fit ? ((z - 1) * fit.h) / 2 : 0;
+    return { x: Math.max(-mx, Math.min(mx, x)), y: Math.max(-my, Math.min(my, y)) };
+  };
+  const setZoomTo = (z: number) => {
+    const nz = Math.max(1, Math.min(4, Math.round(z * 2) / 2));
+    setZoom(nz);
+    setPan((p) => clampPan(nz, p.x, p.y));
+    if (nz === 1) setPanMode(false);
+  };
+  const resetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setPanMode(false);
+  };
+  useLayoutEffect(() => {
+    const parent = wrapRef.current?.parentElement;
+    if (!parent || width <= 0 || height <= 0) return;
+    const update = () => {
+      const aw = parent.clientWidth;
+      const ah = parent.clientHeight;
+      if (aw <= 0 || ah <= 0) return;
+      const s = Math.min(aw / width, ah / height);
+      setFit({ w: Math.round(width * s), h: Math.round(height * s) });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [width, height]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -359,6 +407,18 @@ export function PhotoOverlay({
   const straightening = tool === 'straighten';
   const cropping = tool === 'crop';
   const active = canPaint || straightening || cropping;
+  // Pan drag (the hand tool) — takes over the canvas pointer while it's on.
+  const onPanDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    panStart.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+    ref.current?.setPointerCapture(e.pointerId);
+  };
+  const onPanMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const s = panStart.current;
+    if (s) setPan(clampPan(zoom, s.px + (e.clientX - s.x), s.py + (e.clientY - s.y)));
+  };
+  const onPanUp = () => {
+    panStart.current = null;
+  };
   const [drag, setDrag] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
   // Crop draft: the live, adjustable zone (normalised to the current image). It's transient —
   // only the *applied* crop becomes app state (via onCrop). Proposed immediately on crop entry.
@@ -496,17 +556,28 @@ export function PhotoOverlay({
     }
   };
 
-  const cursorStyle = canPaint ? 'none' : straightening ? 'crosshair' : cropping ? cropCursor : undefined;
+  const cursorStyle = panMode ? 'grab' : canPaint ? 'none' : straightening ? 'crosshair' : cropping ? cropCursor : undefined;
 
+  // The wrapper is sized (in JS) to the contain-fit of the photo in the available space, so the
+  // canvas + absolute overlays share exactly that box — fits any screen, never distorts.
   return (
-    <div className="relative inline-flex max-h-full max-w-full">
+    <>
+    <div
+      ref={wrapRef}
+      className="relative max-h-full max-w-full"
+      style={{
+        ...(fit ? { width: fit.w, height: fit.h } : { aspectRatio: `${width} / ${height}` }),
+        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+        transformOrigin: 'center center',
+      }}
+    >
       <canvas
         ref={ref}
-        className={`max-h-full max-w-full rounded-lg ${active ? 'touch-none' : ''}`}
+        className={`block h-full w-full rounded-lg ${active || panMode ? 'touch-none' : ''}`}
         style={{ cursor: cursorStyle }}
-        onPointerDown={active ? onDown : undefined}
-        onPointerMove={active ? onMove : undefined}
-        onPointerUp={active ? onUp : undefined}
+        onPointerDown={panMode ? onPanDown : active ? onDown : undefined}
+        onPointerMove={panMode ? onPanMove : active ? onMove : undefined}
+        onPointerUp={panMode ? onPanUp : active ? onUp : undefined}
         onPointerLeave={() => setCursor(null)}
       />
       {showGrid && width > 0 && height > 0 && <AlignmentGrid width={width} height={height} />}
@@ -615,5 +686,53 @@ export function PhotoOverlay({
         </>
       )}
     </div>
+    {/* Zoom / pan controls — bottom-right, outside the transformed wrapper so they stay put. */}
+    <div className="absolute bottom-3 right-3 z-20 flex flex-col gap-1.5">
+      <button
+        type="button"
+        onClick={() => setZoomTo(zoom + 0.5)}
+        disabled={zoom >= 4}
+        title={t('photo.zoomIn')}
+        aria-label={t('photo.zoomIn')}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm backdrop-blur transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ZoomIn size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => setZoomTo(zoom - 0.5)}
+        disabled={zoom <= 1}
+        title={t('photo.zoomOut')}
+        aria-label={t('photo.zoomOut')}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm backdrop-blur transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ZoomOut size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => setPanMode((m) => !m)}
+        disabled={zoom <= 1}
+        aria-pressed={panMode}
+        title={t('photo.pan')}
+        aria-label={t('photo.pan')}
+        className={`flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm backdrop-blur transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          panMode ? 'border-accent-600 bg-accent-50 text-accent-700' : 'border-slate-200 bg-white/90 text-slate-600 hover:bg-white'
+        }`}
+      >
+        <Hand size={16} />
+      </button>
+      {zoom !== 1 && (
+        <button
+          type="button"
+          onClick={resetView}
+          title={t('photo.zoomReset')}
+          aria-label={t('photo.zoomReset')}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm backdrop-blur transition-colors hover:bg-white"
+        >
+          <Maximize2 size={16} />
+        </button>
+      )}
+    </div>
+    </>
   );
 }

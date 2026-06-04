@@ -68,12 +68,29 @@ export function chaikin(points: Point2D[], iterations: number): Point2D[] {
  * (`factor·6` px) then Chaikin rounding (`round(factor·3)` passes). Pure — cheap enough to run
  * on every slider tick. Fewer than 3 points are returned unchanged.
  */
+/**
+ * Simplify tolerance scaled to the contour's own size — the outline is in full-res px, so a fixed
+ * pixel tolerance is invisible at display scale. ~2.5 % of the object's max dimension at factor 1,
+ * which makes the smoothing actually visible whatever the image resolution.
+ */
+function smoothingTolerancePx(points: Point2D[], f: number): number {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return f * Math.max(maxX - minX, maxY - minY) * 0.025;
+}
+
 export function smoothContour(points: Point2D[], factor: number): Point2D[] {
   if (points.length < 3) return points.slice();
   const f = Math.max(0, Math.min(1, factor));
-  const tolerancePx = f * 6;
-  const iterations = Math.round(f * 3);
-  return chaikin(simplify(points, tolerancePx), iterations);
+  return chaikin(simplify(points, smoothingTolerancePx(points, f)), Math.round(f * 4));
 }
 
 /** Orientation of the longest edge, folded to [0, π/2) — the polygon's dominant axis. */
@@ -270,7 +287,8 @@ export interface RefineOptions {
 export function refineContour(points: Point2D[], opts: RefineOptions): Point2D[] {
   if (points.length < 3) return points.slice();
   const f = Math.max(0, Math.min(1, opts.smoothingFactor));
-  const simplified = simplify(points, f * 6);
-  if (opts.straighten) return rectifyStraightEdges(simplified, opts.straightenToleranceDeg);
-  return chaikin(simplified, Math.round(f * 3));
+  if (opts.straighten) {
+    return rectifyStraightEdges(simplify(points, smoothingTolerancePx(points, f)), opts.straightenToleranceDeg);
+  }
+  return smoothContour(points, f);
 }

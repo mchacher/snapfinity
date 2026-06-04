@@ -12,6 +12,11 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ### Changed
 
+- **Détourage is now an explicit selection (Photoshop-like).** Loading a photo only **detects the
+  token** — it no longer tries to auto-select the object. **Sélection** presents two clear paths:
+  **Créer la sélection** — 🪄 *Détecter l'objet* (auto) or *Sélectionner à la main* (lasso) — then
+  **Ajuster** it (Points · Pinceau · Seuil) and *Effacer* to start over. Faster load, calmer
+  preview, and the 3D/pocket only build once you've made a selection.
 - **Cleaner détourage panel** — the left panel is reorganized into the two sections the workflow
   actually has: **Image** (Cadrage + Réglages) and **Détourage** (Calibrage Ø token → **Sélection**
   → Retouche). **Sélection** frames the choice Photoshop-style — grab the object **automatically**

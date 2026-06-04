@@ -24,7 +24,7 @@ export function Tabs({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
-            className={`rounded-[10px] px-4 py-1.5 text-sm font-semibold transition-colors ${
+            className={`rounded-[10px] px-4 py-1.5 text-[13px] font-semibold transition-colors ${
               selected ? 'bg-white text-accent-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >

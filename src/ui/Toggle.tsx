@@ -9,7 +9,7 @@ export function Toggle({
 }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-slate-600">{label}</span>
+      <span className="text-[13px] text-slate-600">{label}</span>
       <button
         type="button"
         role="switch"

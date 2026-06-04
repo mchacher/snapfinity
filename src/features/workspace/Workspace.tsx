@@ -13,6 +13,8 @@ import { refineContour, simplifyForEdit } from '../../core/contour';
 import { offsetPolygon, type Point2D } from '../../core/offset';
 import { contourToFootprintMm } from '../../core/footprint';
 import { straightenAngleDeg, normaliseCrop, rotateCrop90, type CropRect } from '../../vision/photo-transform';
+import { maskFromRing } from '../../vision/raster';
+import type { DerivedMask } from '../../vision/analyze';
 import type { SegmentMode } from '../../vision/segment-mode';
 import { useI18n } from '../../i18n';
 
@@ -33,7 +35,17 @@ function composeCrop(outer: CropRect | null, inner: CropRect): CropRect {
 }
 
 /** Photo framing tool (Outline tab): brush (default) vs straighten vs crop vs contour edit vs lasso. */
-export type FrameTool = 'none' | 'straighten' | 'crop' | 'contour' | 'lasso';
+// Photo/selection tools. 'lissage' & 'redresser' are step-3 adjust tools with no photo interaction
+// (their config is a slider/toggle) — they map to 'none' for the overlay.
+export type FrameTool =
+  | 'none'
+  | 'straighten'
+  | 'crop'
+  | 'contour'
+  | 'lasso'
+  | 'brush'
+  | 'lissage'
+  | 'redresser';
 // Bundled font faces embedded into the PDF plan (non-embedded fonts fail at the print spooler).
 import interRegularUrl from '@fontsource/inter/files/inter-latin-400-normal.woff?url';
 import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff?url';
@@ -120,7 +132,7 @@ const initialParams: Params = {
   notchOffsetXMm: 0,
   notchOffsetYMm: 0,
   straightenEdges: false,
-  straightenToleranceDeg: 8,
+  straightenToleranceDeg: 0, // 0 = no straightening (Redresser slider off)
   straightenDeg: 0,
   cropRect: null,
 };
@@ -132,7 +144,18 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
   const [frameTool, setFrameTool] = useState<FrameTool>('none');
   // Hand-edited contour (spec 035): when set, it overrides the auto contour everywhere downstream.
   const [editedContour, setEditedContour] = useState<Point2D[] | null>(null);
+  // A hand-traced (lasso) selection, rasterized into a mask so it feeds the SAME pipeline as an
+  // automatic one — every adjust tool (brush, points, lissage, redresser) then works on it. `null`
+  // for an automatic selection.
+  const [manualMask, setManualMask] = useState<DerivedMask | null>(null);
+  // Selection wizard step (spec 039): after an auto detect the user first validates the method,
+  // then unlocks the adjustment tools.
+  const [selectionStep, setSelectionStep] = useState<'method' | 'adjust'>('method');
   const [photoEpoch, setPhotoEpoch] = useState(0); // bumps per new photo → resets undo history
+  // A framing change or a new photo invalidates the traced mask — its geometry is stale.
+  useEffect(() => {
+    setManualMask(null);
+  }, [params.straightenDeg, params.cropRect, photoEpoch]);
   const set = <K extends keyof Params>(key: K, value: Params[K]) =>
     setParams((prev) => ({ ...prev, [key]: value }));
 
@@ -177,9 +200,22 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
     setParams((p) => ({ ...p, straightenDeg: 0, cropRect: null }));
     setEditedContour(null);
   };
-  const derived = useDerivedMask(photo.result, params.detectThreshold, params.segmentMode);
+  const { derived, deriving } = useDerivedMask(photo.result, params.detectThreshold, params.segmentMode);
+  // Pin 'auto' to the method it actually resolved to (spec 039): so the UI shows the active method
+  // AND subsequent threshold tweaks re-derive that ONE method instead of rebuilding+comparing both
+  // (u2netp + edges) every step — which is what made the Seuil slider feel heavy.
+  useEffect(() => {
+    const rm = derived?.resolvedMode;
+    if (rm && params.segmentMode === 'auto') {
+      setParams((p) => (p.segmentMode === 'auto' ? { ...p, segmentMode: rm } : p));
+    }
+  }, [derived?.resolvedMode, params.segmentMode]);
+  // A manual (lasso) mask takes the place of the auto one, so the whole pipeline (brush, contour,
+  // smoothing, straighten) is identical for both. `isAutoMask` (auto only) gates the method step.
+  const baseMask = manualMask ?? derived;
+  const isAutoMask = !!derived && !manualMask;
   const { editedMask, hasEdits, paint, reset, version, snapshot, restore } = useMaskEdit(
-    derived,
+    baseMask,
     photo.result?.width ?? 0,
     photo.result?.height ?? 0,
   );
@@ -231,11 +267,12 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
       editedMask
         ? refineContour(editedMask.outline, {
             smoothingFactor: params.smoothingFactor,
-            straighten: params.straightenEdges,
+            // Redresser is a single slider now: 0 = off, >0 = straighten at that tolerance.
+            straighten: params.straightenToleranceDeg > 0,
             straightenToleranceDeg: params.straightenToleranceDeg,
           })
         : [],
-    [editedMask, params.smoothingFactor, params.straightenEdges, params.straightenToleranceDeg],
+    [editedMask, params.smoothingFactor, params.straightenToleranceDeg],
   );
   // A hand-edited contour (spec 035) takes over from the auto one — for the overlay, offset,
   // pocket and PDF alike. Manual wins until it's reset or the framing/photo changes (cleared above).
@@ -247,16 +284,35 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
     setFrameTool('contour');
   };
   const resetContour = () => setEditedContour(autoContour.length >= 3 ? simplifyForEdit(autoContour) : null);
-  const clearContour = () => {
-    setEditedContour(null);
-    setFrameTool((tl) => (tl === 'contour' ? 'none' : tl));
-  };
-  // Magnetic lasso (spec 037): a traced closed contour seeds the node editor to refine.
+  // Magnetic lasso (spec 037): the traced ring becomes a manual MASK, so the selection behaves just
+  // like an automatic one and all adjust tools apply. Land in Ajuster with no tool armed.
   const onLasso = (ring: Point2D[]) => {
-    if (ring.length < 3) return;
-    setEditedContour(simplifyForEdit(ring));
-    setFrameTool('contour');
+    if (ring.length < 3 || !photo.framed) return;
+    setEditedContour(null);
+    setManualMask(maskFromRing(ring, photo.framed.width, photo.framed.height));
+    setFrameTool('none');
   };
+  // Magic wand (spec 039): show the automatic selection — drop any hand contour override and run
+  // the object segmentation on demand (it doesn't run on load; if already segmented this just
+  // reverts to the auto result instantly).
+  const onMagicWand = () => {
+    setEditedContour(null);
+    setManualMask(null); // an automatic selection replaces any manual mask
+    setFrameTool((tl) => (tl === 'none' || tl === 'straighten' || tl === 'crop' ? tl : 'none'));
+    setParams((p) => ({ ...p, segmentMode: 'auto' })); // re-pick the best method on a fresh detect
+    setSelectionStep('method'); // a fresh detection starts back at the method step
+    photo.requestSegment();
+  };
+  // Clear the whole selection: the auto segmentation, the brush edits and a hand contour.
+  const onClearSelection = () => {
+    photo.clearSegment();
+    reset();
+    setEditedContour(null);
+    setManualMask(null);
+    setFrameTool((tl) => (tl === 'none' || tl === 'straighten' || tl === 'crop' ? tl : 'none'));
+  };
+  // A selection exists once there's a usable contour (auto, lasso or hand-edited).
+  const hasSelection = contour.length >= 3;
   const offsetContour = useMemo(() => {
     if (!scaleMmPerPx || contour.length < 3 || params.offsetMm <= 0) return [];
     return offsetPolygon(contour, params.offsetMm / scaleMmPerPx);
@@ -358,20 +414,24 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
             params={params}
             set={set}
             tab={tab}
-            onResetEdits={reset}
-            hasEdits={hasEdits}
             frameTool={frameTool}
             onFrameTool={setFrameTool}
             onResetFraming={resetFraming}
             onRotate90={rotate90}
             canEditContour={autoContour.length >= 3 || editedContour != null}
             editingContour={frameTool === 'contour'}
-            hasManualContour={editedContour != null}
             onEditContour={enterContourEdit}
-            onResetContour={resetContour}
-            onClearContour={clearContour}
             onDoneContour={() => setFrameTool('none')}
             canLasso={!!photo.framed}
+            canMagicWand={!!photo.framed}
+            onMagicWand={onMagicWand}
+            hasSelection={hasSelection}
+            hasMask={!!editedMask}
+            isAutoMask={isAutoMask}
+            activeMethod={derived?.resolvedMode}
+            selectionStep={selectionStep}
+            onMethodNext={() => setSelectionStep('adjust')}
+            onClearSelection={onClearSelection}
           />
         </aside>
         <section className="relative min-h-0 p-4">
@@ -383,6 +443,7 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
               contour={contour}
               offsetContour={offsetContour}
               scaleMmPerPx={scaleMmPerPx}
+              computing={deriving}
               onUpload={(file) => {
                 reset();
                 setEditedContour(null);
@@ -390,7 +451,11 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
                 photo.setFile(file);
               }}
               onPaint={paint}
-              tool={frameTool === 'none' ? 'brush' : frameTool}
+              tool={frameTool}
+              set={set}
+              onResetContour={resetContour}
+              onResetEdits={reset}
+              hasEdits={hasEdits}
               editNodes={editedContour ?? undefined}
               onEditNodes={setEditedContour}
               onLasso={onLasso}
