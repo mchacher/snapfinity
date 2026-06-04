@@ -139,10 +139,13 @@ export const en = {
   landing: {
     badge: '100% in your browser · no server',
     title: 'Turn a photo into a custom Gridfinity bin',
+    titleTime: 'in 3 minutes',
     subtitle:
       'Photograph an object next to the calibration token. Snapfinity derives a Gridfinity bin hollowed exactly to its shape, ready to 3D-print.',
     start: 'Get started',
     getToken: 'Print the token',
+    heroPhoto: 'PHOTO',
+    heroBin: 'GRIDFINITY BIN',
     howTitle: 'How it works',
     step1Title: 'Photograph',
     step1Body:

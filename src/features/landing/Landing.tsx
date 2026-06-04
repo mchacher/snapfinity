@@ -1,7 +1,8 @@
 import { Camera, Scan, Box, Download, ShieldCheck, ArrowRight } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 import { Logo } from '../../ui/Logo';
 import { Button } from '../../ui/Button';
+import { HeroVisual } from './HeroVisual';
 import { useI18n, type Lang } from '../../i18n';
 
 const TOKEN_STL = `${import.meta.env.BASE_URL}token/snapfinity-token.stl`;
@@ -54,6 +55,31 @@ export function Landing({ onStart }: { onStart: () => void }) {
     { Icon: Box, title: t('landing.step3Title'), body: t('landing.step3Body') },
   ];
 
+  const badge = (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700">
+      <ShieldCheck size={13} /> {t('landing.badge')}
+    </span>
+  );
+  const heading = (
+    <h1 className="mt-6 text-pretty text-3xl font-bold leading-tight tracking-tight text-balance text-slate-900 sm:text-[2.6rem]">
+      {t('landing.title')} <span className="whitespace-nowrap text-accent-600">{t('landing.titleTime')}</span>
+    </h1>
+  );
+  const ctas = (
+    <>
+      <Button variant="primary" className="px-5 py-2.5 text-base" icon={<ArrowRight size={18} />} onClick={onStart}>
+        {t('landing.start')}
+      </Button>
+      <a
+        href={TOKEN_STL}
+        download
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-base font-medium text-slate-700 transition-colors hover:bg-slate-50"
+      >
+        <Download size={18} /> {t('landing.getToken')}
+      </a>
+    </>
+  );
+
   return (
     <div className="h-full overflow-y-auto bg-white text-slate-800">
       <header className="sticky top-0 z-10 flex items-center border-b border-slate-100 bg-white/80 px-5 py-3 backdrop-blur">
@@ -80,44 +106,44 @@ export function Landing({ onStart }: { onStart: () => void }) {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0" style={gridBackdrop} />
-        <div className="relative mx-auto max-w-3xl px-6 pb-16 pt-16 text-center sm:pt-24">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700">
-            <ShieldCheck size={13} /> {t('landing.badge')}
-          </span>
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-            {t('landing.title')}
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-600">{t('landing.subtitle')}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button variant="primary" className="px-5 py-2.5 text-base" icon={<ArrowRight size={18} />} onClick={onStart}>
-              {t('landing.start')}
-            </Button>
-            <a
-              href={TOKEN_STL}
-              download
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-base font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              <Download size={18} /> {t('landing.getToken')}
-            </a>
-          </div>
+        <div className="relative mx-auto max-w-3xl px-6 pb-14 pt-16 text-center sm:pt-20">
+          {badge}
+          {heading}
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">{t('landing.subtitle')}</p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">{ctas}</div>
+          <HeroVisual
+            className="mx-auto mt-12 w-full max-w-2xl"
+            photoLabel={t('landing.heroPhoto')}
+            binLabel={t('landing.heroBin')}
+          />
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-5xl px-6 py-14">
-        <h2 className="text-center text-sm font-semibold uppercase tracking-wider text-slate-400">
+      {/* How it works — a 3-step workflow: big numbers + arrows show the sequence. */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <h2 className="text-center text-sm font-semibold uppercase tracking-wider text-accent-600">
           {t('landing.howTitle')}
         </h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-2">
           {steps.map(({ Icon, title, body }, i) => (
-            <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                <Icon size={22} />
+            <Fragment key={title}>
+              <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                {/* big step number, set as a watermark behind the content */}
+                <span className="pointer-events-none absolute right-4 top-4 font-mono text-7xl font-bold leading-none text-accent-100 select-none">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
+                  <Icon size={24} />
+                </div>
+                <h3 className="relative mt-5 text-lg font-semibold text-slate-900">{title}</h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
               </div>
-              <div className="mt-4 font-mono text-xs font-semibold text-accent-600">{String(i + 1).padStart(2, '0')}</div>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
-            </div>
+              {i < steps.length - 1 && (
+                <div aria-hidden className="hidden shrink-0 items-center justify-center px-1 text-accent-300 sm:flex">
+                  <ArrowRight size={24} />
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
       </section>

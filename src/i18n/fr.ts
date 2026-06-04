@@ -141,10 +141,13 @@ export const fr: Dict = {
   landing: {
     badge: '100% dans ton navigateur · sans serveur',
     title: 'Transforme une photo en bac Gridfinity sur‑mesure',
+    titleTime: 'en 3 minutes',
     subtitle:
       "Photographie un objet à côté du jeton de calibrage. Snapfinity en déduit un bac Gridfinity creusé exactement à sa forme, prêt à imprimer en 3D.",
     start: 'Commencer',
     getToken: 'Imprimer le jeton',
+    heroPhoto: 'PHOTO',
+    heroBin: 'BAC GRIDFINITY',
     howTitle: 'Comment ça marche',
     step1Title: 'Photographie',
     step1Body:
