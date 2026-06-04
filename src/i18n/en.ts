@@ -149,7 +149,7 @@ export const en = {
     howTitle: 'How it works',
     step1Title: 'Photograph',
     step1Body:
-      'Lay the object and the token flat on a plain, evenly-lit light background, and shoot from straight above.',
+      'Lay the object and the calibration token flat on a plain, evenly-lit light background, and shoot from straight above.',
     step2Title: 'Detect & calibrate',
     step2Body:
       'The token sets the scale, the object’s outline is detected automatically. It all runs in your browser.',

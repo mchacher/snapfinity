@@ -151,7 +151,7 @@ export const fr: Dict = {
     howTitle: 'Comment ça marche',
     step1Title: 'Photographie',
     step1Body:
-      'Pose l’objet et le jeton à plat sur un fond clair et uni, bien éclairé, et prends la photo du dessus.',
+      'Pose l’objet et le jeton de calibration à plat sur un fond clair et uni, bien éclairé, et prends la photo du dessus.',
     step2Title: 'Détoure & calibre',
     step2Body:
       'Le jeton donne l’échelle, le contour de l’objet se détecte automatiquement. Tout se passe dans ton navigateur.',

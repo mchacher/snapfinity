@@ -2,11 +2,12 @@ import { Camera, Scan, Box, Download, ShieldCheck, ArrowRight } from 'lucide-rea
 import { Fragment, type CSSProperties } from 'react';
 import { Logo } from '../../ui/Logo';
 import { Button } from '../../ui/Button';
-import { HeroVisual } from './HeroVisual';
+import { HeroVisual3D } from './HeroVisual3D';
 import { useI18n, type Lang } from '../../i18n';
 
 const TOKEN_STL = `${import.meta.env.BASE_URL}token/snapfinity-token.stl`;
 const TOKEN_STEP = `${import.meta.env.BASE_URL}token/snapfinity-token.step`;
+const TOKEN_REF = `${import.meta.env.BASE_URL}token-ref.jpg`;
 const GITHUB_URL = 'https://github.com/mchacher/snapfinity';
 
 // Faint Gridfinity-style grid behind the hero, faded out toward the edges.
@@ -27,17 +28,20 @@ function GithubMark({ size = 16 }: { size?: number }) {
   );
 }
 
-/** A small glyph echoing the real calibration token: a disc with a 6-fold ring of holes. */
+/** The real Snapfinity calibration token: its black-on-white reference image inverted into a mask,
+ *  then filled with the brand accent. */
 function TokenGlyph() {
-  const holes = Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 3) * i - Math.PI / 2;
-    return <circle key={i} cx={16 + Math.cos(a) * 7.5} cy={16 + Math.sin(a) * 7.5} r="1.7" fill="currentColor" />;
-  });
   return (
-    <svg width="36" height="36" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="16" cy="16" r="13" />
-      {holes}
-      <circle cx="16" cy="16" r="2" fill="currentColor" />
+    <svg width="46" height="46" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <filter id="lt-tok-inv">
+          <feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />
+        </filter>
+        <mask id="lt-tok-mask">
+          <image href={TOKEN_REF} width="100" height="100" preserveAspectRatio="xMidYMid meet" filter="url(#lt-tok-inv)" />
+        </mask>
+      </defs>
+      <rect width="100" height="100" fill="#3b8ef0" mask="url(#lt-tok-mask)" />
     </svg>
   );
 }
@@ -111,8 +115,8 @@ export function Landing({ onStart }: { onStart: () => void }) {
           {heading}
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">{t('landing.subtitle')}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">{ctas}</div>
-          <HeroVisual
-            className="mx-auto mt-12 w-full max-w-2xl"
+          <HeroVisual3D
+            className="mx-auto mt-12 w-full max-w-3xl"
             photoLabel={t('landing.heroPhoto')}
             binLabel={t('landing.heroBin')}
           />
