@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Snapfinity — réorganisation UX du panneau Détourage</title>
+<style>
+  :root{
+    --accent:#3b8ef0; --accent7:#2f78d4; --accent50:#eff6ff; --accent200:#bfdbfe;
+    --slate900:#0f172a; --slate800:#1e293b; --slate700:#334155; --slate600:#475569;
+    --slate500:#64748b; --slate400:#94a3b8; --slate300:#cbd5e1; --slate200:#e2e8f0;
+    --slate100:#f1f5f9; --slate50:#f8fafc; --track:#e6ecf4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate100);color:var(--slate800);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;}
+  header{max-width:1180px;margin:0 auto;padding:32px 24px 8px}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:-.02em;color:var(--slate900)}
+  .sub{color:var(--slate500);max-width:760px}
+  .sub b{color:var(--slate700)}
+  .grid{max-width:1180px;margin:0 auto;padding:16px 24px 48px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+  @media(max-width:1080px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--slate200);border-radius:16px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card.cur{opacity:.92}
+  .chead{padding:14px 16px 12px;border-bottom:1px solid var(--slate100)}
+  .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+  .b-cur{background:var(--slate100);color:var(--slate500)}
+  .b-a{background:#fef2f2;color:#dc2626}
+  .b-b{background:var(--accent50);color:var(--accent7)}
+  .b-c{background:#ecfdf5;color:#059669}
+  .ctitle{font-size:15px;font-weight:700;color:var(--slate900);line-height:1.3}
+  .cone{font-size:12.5px;color:var(--slate500);margin-top:4px}
+  /* mockup panel */
+  .panel{padding:6px 0 4px;background:#fff}
+  .sec{border-top:1px solid var(--slate100);padding:10px 16px 12px}
+  .sec:first-child{border-top:0}
+  .sec-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--slate400);margin:2px 0 8px}
+  .sec-h .chev{color:var(--slate300)}
+  .subh{font-size:11px;font-weight:600;color:var(--slate500);margin:10px 0 5px;
+    text-transform:uppercase;letter-spacing:.03em}
+  .row{display:flex;align-items:center;gap:10px;padding:4px 0;min-height:30px}
+  .lbl{color:var(--slate600);font-size:13px;flex:0 0 96px}
+  .grow{flex:1}
+  .sld{flex:1;height:5px;border-radius:999px;background:var(--track);position:relative}
+  .sld::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,45%);
+    background:var(--accent);border-radius:999px}
+  .sld::after{content:"";position:absolute;left:calc(var(--p,45%) - 5px);top:50%;
+    transform:translateY(-50%);width:10px;height:18px;border-radius:5px;background:var(--accent);
+    border:2px solid #fff;box-shadow:0 1px 2px rgba(15,23,42,.25)}
+  .val{flex:0 0 auto;font:12px ui-monospace,Menlo,monospace;color:var(--slate800)}
+  .tog{flex:0 0 auto;width:34px;height:20px;border-radius:999px;position:relative;background:var(--slate300)}
+  .tog.on{background:var(--accent)}
+  .tog::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.2)}
+  .tog.on::after{left:16px}
+  .tabs{display:flex;gap:2px;background:var(--slate100);border:1px solid var(--slate200);
+    border-radius:11px;padding:3px;flex:1}
+  .tabs span{flex:1;text-align:center;font-size:12.5px;font-weight:600;padding:5px 4px;border-radius:8px;color:var(--slate500)}
+  .tabs span.sel{background:#fff;color:var(--accent7);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;flex:1;
+    border:1px solid var(--slate200);border-radius:9px;padding:7px;font-size:13px;color:var(--slate600);background:#fff}
+  .btn.ic{flex:0 0 40px}
+  .btn.pri{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .btn.arm{background:var(--accent50);border-color:var(--accent200);color:var(--accent7)}
+  .adv{display:flex;align-items:center;gap:6px;color:var(--slate400);font-size:12.5px;
+    padding:7px 0;border-top:1px dashed var(--slate200);margin-top:8px;cursor:default}
+  .adv .chev{font-size:11px}
+  .hint{font-size:11.5px;color:var(--slate400);background:var(--accent50);
+    border:1px solid var(--accent200);border-radius:8px;padding:6px 8px;margin-top:6px}
+  .link{font-size:12px;color:var(--accent7);font-weight:600;margin-top:6px}
+  .why{padding:14px 16px 16px;border-top:1px solid var(--slate100);background:var(--slate50)}
+  .why h4{margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--slate400)}
+  .why p{margin:0 0 10px;font-size:12.5px;color:var(--slate600)}
+  .why .tag{display:inline-block;font-size:11px;color:var(--slate500);background:#fff;
+    border:1px solid var(--slate200);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0}
+  .legend{max-width:1180px;margin:0 auto;padding:0 24px 36px;color:var(--slate500);font-size:13px}
+  .legend code{background:var(--slate100);border-radius:5px;padding:1px 5px}
+  .foot{max-width:1180px;margin:0 auto 48px;padding:18px 24px;background:#fff;border:1px solid var(--slate200);
+    border-radius:14px;color:var(--slate700)}
+  .foot b{color:var(--slate900)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Détourage — 3 façons de ranger le panneau de gauche</h1>
+  <p class="sub">Le constat : la section <b>Détourage</b> est devenue surchargée (méthode + 4 curseurs +
+  bascule + lasso + éditeur de contour), et l'onglet compte <b>6 sections</b>. Ton modèle mental :
+  <b>2 grandes sections</b> — <b>Image</b> (cadrage + réglages) et <b>Détourage</b> (méthode + retouche),
+  avec une idée-clé : on doit pouvoir <b>retoucher après n'importe quelle méthode</b> (même Auto).
+  Voici l'état actuel puis 3 réorganisations. <b>À toi de choisir</b> (une, ou un mélange).</p>
+</header>
+
+<div class="grid">
+
+  <!-- ACTUEL -->
+  <div class="card cur">
+    <div class="chead">
+      <span class="badge b-cur">Actuel</span>
+      <div class="ctitle">6 sections empilées</div>
+      <div class="cone">Tout est à plat — la section Détourage déborde.</div>
+    </div>
+    <div class="panel">
+      <div class="sec"><div class="sec-h">Calibrage</div>
+        <div class="row"><span class="lbl">Ø token</span><span class="grow"></span><span class="val">76,2 mm</span></div></div>
+      <div class="sec"><div class="sec-h">Cadrage</div>
+        <div class="row"><span class="lbl">Pivoter</span><span class="btn">↺ 90°</span><span class="btn">↻ 90°</span></div>
+        <div class="row"><span class="lbl">Rogner</span><span class="btn ic">▢</span></div>
+        <div class="row"><span class="lbl">Angle</span><span class="val">0°</span><span class="btn ic">⊾</span></div></div>
+      <div class="sec"><div class="sec-h">Image</div>
+        <div class="row"><span class="lbl">Aplatir</span><span class="sld" style="--p:20%"></span></div>
+        <div class="row"><span class="lbl">Luminosité</span><span class="sld" style="--p:50%"></span></div>
+        <div class="row"><span class="lbl">Contraste</span><span class="sld" style="--p:50%"></span></div></div>
+      <div class="sec"><div class="sec-h">Affichage</div>
+        <div class="row"><span class="lbl">Masque vert</span><span class="grow"></span><span class="tog on"></span></div>
+        <div class="row"><span class="lbl">Opacité</span><span class="sld" style="--p:45%"></span></div>
+        <div class="row"><span class="lbl">Grille</span><span class="grow"></span><span class="tog"></span></div></div>
+      <div class="sec" style="background:#fff7f7">
+        <div class="sec-h" style="color:#dc2626">Détourage</div>
+        <div class="row"><span class="tabs"><span class="sel">Auto</span><span>Standard</span><span>Contours</span></span></div>
+        <div class="row"><span class="lbl">Seuil</span><span class="sld" style="--p:40%"></span></div>
+        <div class="row"><span class="lbl">Lissage</span><span class="sld" style="--p:50%"></span></div>
+        <div class="row"><span class="lbl">Redresser</span><span class="grow"></span><span class="tog"></span></div>
+        <div class="row"><span class="lbl">Jeu</span><span class="sld" style="--p:25%"></span></div>
+        <div class="row"><span class="lbl">Lasso</span><span class="btn">⟿ Tracer</span></div>
+        <div class="row"><span class="lbl">Contour</span><span class="btn">✎ Modifier</span></div></div>
+      <div class="sec"><div class="sec-h">Pinceau</div>
+        <div class="row"><span class="tabs"><span class="sel">Ajouter</span><span>Effacer</span></span></div>
+        <div class="row"><span class="lbl">Taille</span><span class="sld" style="--p:30%"></span></div></div>
+    </div>
+    <div class="why"><p style="margin:0;color:var(--slate500)">~25 contrôles visibles d'un coup ;
+      le parcours n'est pas guidé et la zone Détourage est le point noir.</p></div>
+  </div>
+
+  <!-- PROPOSITION A -->
+  <div class="card">
+    <div class="chead">
+      <span class="badge b-a">Proposition A</span>
+      <div class="ctitle">Fidèle au croquis</div>
+      <div class="cone">2 sections, sous-sections nommées comme tu les as décrites.</div>
+    </div>
+    <div class="panel">
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Image</div>
+        <div class="adv" style="margin-top:0;border-top:0"><span class="chev">▸</span> Calibrage (Ø token) — replié</div>
+        <div class="subh">Cadrage</div>
+        <div class="row"><span class="lbl">Pivoter</span><span class="btn">↺</span><span class="btn">↻</span></div>
+        <div class="row"><span class="lbl">Rogner</span><span class="btn ic">▢</span><span class="lbl">Angle</span><span class="btn ic">⊾</span></div>
+        <div class="subh">Réglages</div>
+        <div class="row"><span class="lbl">Aplatir</span><span class="sld" style="--p:20%"></span></div>
+        <div class="row"><span class="lbl">Luminosité</span><span class="sld" style="--p:50%"></span></div>
+        <div class="row"><span class="lbl">Contraste</span><span class="sld" style="--p:50%"></span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Détourage</div>
+        <div class="subh">Aperçu</div>
+        <div class="row"><span class="lbl">Masque vert</span><span class="grow"></span><span class="tog on"></span></div>
+        <div class="row"><span class="lbl">Grille</span><span class="grow"></span><span class="tog"></span></div>
+        <div class="subh">Méthode</div>
+        <div class="row"><span class="tabs"><span class="sel">Auto</span><span>Standard</span><span>Contours</span></span></div>
+        <div class="row"><span class="lbl">Jeu</span><span class="sld" style="--p:25%"></span></div>
+        <div class="adv"><span class="chev">▸</span> Réglages avancés (seuil, lissage, redresser)</div>
+        <div class="subh">Retouche</div>
+        <div class="row"><span class="btn arm">⟿ Lasso</span><span class="btn">✎ Modifier</span></div>
+        <div class="adv"><span class="chev">▸</span> Pinceau</div>
+      </div>
+    </div>
+    <div class="why">
+      <h4>Pourquoi</h4><p>Suit ton croquis à la lettre. La <b>Retouche</b> (lasso, modifier, pinceau)
+      vit sous Détourage, après la méthode → atteignable même en Auto. Aperçu (masque/grille) en tête de section.</p>
+      <h4>Compromis</h4><p>2 sections plus denses qui s'appuient beaucoup sur les sous-titres ; demande un petit
+      composant de sous-section + repli.</p>
+      <h4>Replié par défaut</h4>
+      <span class="tag">Calibrage</span><span class="tag">Réglages avancés</span><span class="tag">Pinceau</span>
+    </div>
+  </div>
+
+  <!-- PROPOSITION B -->
+  <div class="card">
+    <div class="chead">
+      <span class="badge b-b">Proposition B</span>
+      <div class="ctitle">Parcours + tuning replié</div>
+      <div class="cone">Ordonné sur le geste réel ; vue au repos très calme.</div>
+    </div>
+    <div class="panel">
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Image</div>
+        <div class="row" style="opacity:.7"><span class="lbl">Ø token</span><span class="grow"></span><span class="val">76,2 mm</span></div>
+        <div class="subh">Cadrage</div>
+        <div class="row"><span class="lbl">Pivoter</span><span class="btn">↺</span><span class="btn">↻</span></div>
+        <div class="row"><span class="lbl">Rogner</span><span class="btn ic">▢</span><span class="lbl">Angle</span><span class="btn ic">⊾</span></div>
+        <div class="subh">Réglages</div>
+        <div class="row"><span class="lbl">Aplatir</span><span class="sld" style="--p:20%"></span></div>
+        <div class="row"><span class="lbl">Luminosité</span><span class="sld" style="--p:50%"></span></div>
+        <div class="row"><span class="lbl">Contraste</span><span class="sld" style="--p:50%"></span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Détourage</div>
+        <div class="subh">Méthode</div>
+        <div class="row"><span class="tabs"><span class="sel">Auto</span><span>Standard</span><span>Contours</span></span></div>
+        <div class="subh">Retouche</div>
+        <div class="row"><span class="btn">✎ Modifier le contour</span></div>
+        <div class="row"><span class="btn arm">⟿ Lasso magnétique</span></div>
+        <div class="row"><span class="tabs" style="flex:1"><span class="sel">Ajouter</span><span>Effacer</span></span></div>
+        <div class="adv"><span class="chev">▸</span> Réglages avancés (seuil, lissage, redresser, jeu)</div>
+        <div class="adv" style="border-top:0;margin-top:2px"><span class="chev">▸</span> Affichage (masque, grille)</div>
+      </div>
+    </div>
+    <div class="why">
+      <h4>Pourquoi</h4><p>Calé sur le parcours : cadrer → ajuster → méthode → retoucher. Au repos on ne voit que
+      <b>Méthode + Retouche</b>. Tout le tuning fin (curseurs) est <b>replié</b> → fini le bordel.</p>
+      <h4>Compromis</h4><p>Curseurs « experts » à un clic de distance (déplie « Réglages avancés »). Calibrage en bandeau discret.</p>
+      <h4>Replié par défaut</h4>
+      <span class="tag">Réglages avancés</span><span class="tag">Affichage</span>
+    </div>
+  </div>
+
+  <!-- PROPOSITION C -->
+  <div class="card">
+    <div class="chead">
+      <span class="badge b-c">Proposition C</span>
+      <div class="ctitle">Minimalisme radical</div>
+      <div class="cone">Le cas « Auto marche » : presque rien à l'écran.</div>
+    </div>
+    <div class="panel">
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Image</div>
+        <div class="row"><span class="lbl">Cadrage</span><span class="btn">↺</span><span class="btn">↻</span><span class="btn ic">▢</span><span class="btn ic">⊾</span></div>
+        <div class="adv"><span class="chev">▸</span> Réglages avancés (lumino, contraste, aplatir, Ø token)</div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><span class="chev">▾</span> Détourage</div>
+        <div class="subh">Méthode</div>
+        <div class="row"><span class="tabs"><span class="sel">Auto</span><span>Standard</span><span>Contours</span></span></div>
+        <div class="row"><span class="btn pri">✎ Retoucher…</span></div>
+        <div class="adv"><span class="chev">▸</span> Réglages avancés (seuil, lissage, redresser, jeu, masque, grille)</div>
+      </div>
+      <div class="sec" style="background:var(--accent50)">
+        <div class="subh" style="color:var(--accent7)">Retoucher (au clic)</div>
+        <div class="row"><span class="btn">✎ Modifier</span><span class="btn arm">⟿ Lasso</span></div>
+        <div class="adv" style="border-top:0"><span class="chev">▸</span> Pinceau</div>
+      </div>
+    </div>
+    <div class="why">
+      <h4>Pourquoi</h4><p>90 % des photos : fond clair, Auto suffit, on ne touche à rien. L'écran par défaut ≈
+      <b>3 choses</b> : méthode, un bouton <b>Retoucher</b>, et un cadrage compact. Tout le reste est replié.</p>
+      <h4>Compromis</h4><p>Le plus opinioné : chaque réglage demande un dépli. Risque que l'expert trouve ça « trop caché ».</p>
+      <h4>Replié par défaut</h4>
+      <span class="tag">Réglages avancés ×2</span><span class="tag">Retoucher</span><span class="tag">Pinceau</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  Légende des maquettes : <code>▸</code> = bloc replié (déplie au clic) · barre azur = curseur ·
+  pastille = bascule · segments = onglets. Les contrôles sont les <b>mêmes qu'aujourd'hui</b> — c'est
+  un re-rangement, pas de nouvelle fonction.
+</div>
+
+<div class="foot">
+  <b>À toi de jouer.</b> Dis-moi laquelle tu préfères — <b>A</b> (fidèle), <b>B</b> (parcours, calme),
+  <b>C</b> (minimal) — ou un mélange (ex. « structure de B mais Calibrage replié comme A »,
+  ou « C mais garder les curseurs visibles »). Je n'implémente <b>que</b> ton choix, en local, sans rien pousser.
+</div>
+
+</body>
+</html>

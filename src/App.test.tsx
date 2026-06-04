@@ -17,9 +17,9 @@ describe('App', () => {
   it('enters the workspace and returns home via the logo', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Commencer'));
-    // Workspace shell (default language FR).
+    // Workspace shell (default language FR): tabs + the détourage panel's Sélection subsection.
     expect(screen.getByText('Aperçu 3D')).toBeTruthy();
-    expect(screen.getByText('Calibrage')).toBeTruthy();
+    expect(screen.getByText('Sélection')).toBeTruthy();
     // The header logo brings us back to the landing.
     fireEvent.click(screen.getByLabelText("Retour à l'accueil"));
     expect(screen.getByText('Transforme une photo en bac Gridfinity sur-mesure')).toBeTruthy();

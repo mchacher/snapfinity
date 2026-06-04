@@ -10,6 +10,17 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Changed
+
+- **Cleaner détourage panel** — the left panel is reorganized into the two sections the workflow
+  actually has: **Image** (Cadrage + Réglages) and **Détourage** (Calibrage Ø token → **Sélection**
+  → Retouche). **Sélection** frames the choice Photoshop-style — grab the object **automatically**
+  (the magic detection: Auto / Standard / Contours) **or manually** with the **Lasso** — and
+  **Retouche** refines the current selection (Modifier le contour, Pinceau). All fine tuning and
+  display toggles fold into a single collapsed
+  **Réglages avancés** group, so the resting panel is calm (was 6 flat sections with an overloaded
+  Détourage). Section headers are accent-blue and subsections are indented for a clear hierarchy.
+
 ### Added
 
 - **Magnetic lasso** — trace an object's boundary and the line **snaps to the edges** (live-wire /

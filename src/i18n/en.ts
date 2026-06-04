@@ -46,6 +46,12 @@ export const en = {
     contourClear: 'Auto',
     contourManual: 'Manual contour',
     contourHint: 'Drag a point to move · click an edge to add a point · double-click a point to remove it.',
+    adjustments: 'Adjustments',
+    selection: 'Selection',
+    selAutomatic: 'Automatic',
+    selManual: 'Manual',
+    refine: 'Refine',
+    advanced: 'Advanced',
     lasso: 'Magnetic lasso',
     lassoSelect: 'Trace',
     lassoHint:

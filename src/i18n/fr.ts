@@ -48,6 +48,12 @@ export const fr: Dict = {
     contourClear: 'Auto',
     contourManual: 'Contour manuel',
     contourHint: 'Glisse un point pour le déplacer · clique une arête pour ajouter un point · double-clique un point pour le supprimer.',
+    adjustments: 'Réglages',
+    selection: 'Sélection',
+    selAutomatic: 'Automatique',
+    selManual: 'Manuel',
+    refine: 'Retouche',
+    advanced: 'Réglages avancés',
     lasso: 'Lasso magnétique',
     lassoSelect: 'Tracer',
     lassoHint:
