@@ -11,7 +11,7 @@ describe('App', () => {
     expect(screen.getByText('Snapfinity')).toBeTruthy();
     // FR is the default language.
     expect(screen.getByText('Commencer')).toBeTruthy();
-    expect(screen.getByText('Transforme une photo en bac Gridfinity sur-mesure')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Transforme une photo en bac Gridfinity/ })).toBeTruthy();
   });
 
   it('enters the workspace and returns home via the logo', () => {
@@ -23,6 +23,6 @@ describe('App', () => {
     expect(screen.getByText('Créer la sélection')).toBeTruthy();
     // The header logo brings us back to the landing.
     fireEvent.click(screen.getByLabelText("Retour à l'accueil"));
-    expect(screen.getByText('Transforme une photo en bac Gridfinity sur-mesure')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Transforme une photo en bac Gridfinity/ })).toBeTruthy();
   });
 });

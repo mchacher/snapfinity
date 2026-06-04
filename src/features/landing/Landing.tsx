@@ -1,11 +1,13 @@
 import { Camera, Scan, Box, Download, ShieldCheck, ArrowRight } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 import { Logo } from '../../ui/Logo';
 import { Button } from '../../ui/Button';
+import { HeroVisual3D } from './HeroVisual3D';
 import { useI18n, type Lang } from '../../i18n';
 
 const TOKEN_STL = `${import.meta.env.BASE_URL}token/snapfinity-token.stl`;
 const TOKEN_STEP = `${import.meta.env.BASE_URL}token/snapfinity-token.step`;
+const TOKEN_REF = `${import.meta.env.BASE_URL}token-ref.jpg`;
 const GITHUB_URL = 'https://github.com/mchacher/snapfinity';
 
 // Faint Gridfinity-style grid behind the hero, faded out toward the edges.
@@ -26,17 +28,20 @@ function GithubMark({ size = 16 }: { size?: number }) {
   );
 }
 
-/** A small glyph echoing the real calibration token: a disc with a 6-fold ring of holes. */
+/** The real Snapfinity calibration token: its black-on-white reference image inverted into a mask,
+ *  then filled with the brand accent. */
 function TokenGlyph() {
-  const holes = Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 3) * i - Math.PI / 2;
-    return <circle key={i} cx={16 + Math.cos(a) * 7.5} cy={16 + Math.sin(a) * 7.5} r="1.7" fill="currentColor" />;
-  });
   return (
-    <svg width="36" height="36" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="16" cy="16" r="13" />
-      {holes}
-      <circle cx="16" cy="16" r="2" fill="currentColor" />
+    <svg width="46" height="46" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <filter id="lt-tok-inv">
+          <feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />
+        </filter>
+        <mask id="lt-tok-mask">
+          <image href={TOKEN_REF} width="100" height="100" preserveAspectRatio="xMidYMid meet" filter="url(#lt-tok-inv)" />
+        </mask>
+      </defs>
+      <rect width="100" height="100" fill="#3b8ef0" mask="url(#lt-tok-mask)" />
     </svg>
   );
 }
@@ -53,6 +58,31 @@ export function Landing({ onStart }: { onStart: () => void }) {
     { Icon: Scan, title: t('landing.step2Title'), body: t('landing.step2Body') },
     { Icon: Box, title: t('landing.step3Title'), body: t('landing.step3Body') },
   ];
+
+  const badge = (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700">
+      <ShieldCheck size={13} /> {t('landing.badge')}
+    </span>
+  );
+  const heading = (
+    <h1 className="mt-6 text-pretty text-3xl font-bold leading-tight tracking-tight text-balance text-slate-900 sm:text-[2.6rem]">
+      {t('landing.title')} <span className="whitespace-nowrap text-accent-600">{t('landing.titleTime')}</span>
+    </h1>
+  );
+  const ctas = (
+    <>
+      <Button variant="primary" className="px-5 py-2.5 text-base" icon={<ArrowRight size={18} />} onClick={onStart}>
+        {t('landing.start')}
+      </Button>
+      <a
+        href={TOKEN_STL}
+        download
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-base font-medium text-slate-700 transition-colors hover:bg-slate-50"
+      >
+        <Download size={18} /> {t('landing.getToken')}
+      </a>
+    </>
+  );
 
   return (
     <div className="h-full overflow-y-auto bg-white text-slate-800">
@@ -80,44 +110,44 @@ export function Landing({ onStart }: { onStart: () => void }) {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0" style={gridBackdrop} />
-        <div className="relative mx-auto max-w-3xl px-6 pb-16 pt-16 text-center sm:pt-24">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700">
-            <ShieldCheck size={13} /> {t('landing.badge')}
-          </span>
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-            {t('landing.title')}
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-600">{t('landing.subtitle')}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button variant="primary" className="px-5 py-2.5 text-base" icon={<ArrowRight size={18} />} onClick={onStart}>
-              {t('landing.start')}
-            </Button>
-            <a
-              href={TOKEN_STL}
-              download
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-base font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              <Download size={18} /> {t('landing.getToken')}
-            </a>
-          </div>
+        <div className="relative mx-auto max-w-3xl px-6 pb-14 pt-16 text-center sm:pt-20">
+          {badge}
+          {heading}
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">{t('landing.subtitle')}</p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">{ctas}</div>
+          <HeroVisual3D
+            className="mx-auto mt-12 w-full max-w-3xl"
+            photoLabel={t('landing.heroPhoto')}
+            binLabel={t('landing.heroBin')}
+          />
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-5xl px-6 py-14">
-        <h2 className="text-center text-sm font-semibold uppercase tracking-wider text-slate-400">
+      {/* How it works — a 3-step workflow: big numbers + arrows show the sequence. */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <h2 className="text-center text-sm font-semibold uppercase tracking-wider text-accent-600">
           {t('landing.howTitle')}
         </h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-2">
           {steps.map(({ Icon, title, body }, i) => (
-            <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                <Icon size={22} />
+            <Fragment key={title}>
+              <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                {/* big step number, set as a watermark behind the content */}
+                <span className="pointer-events-none absolute right-4 top-4 font-mono text-7xl font-bold leading-none text-accent-100 select-none">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
+                  <Icon size={24} />
+                </div>
+                <h3 className="relative mt-5 text-lg font-semibold text-slate-900">{title}</h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
               </div>
-              <div className="mt-4 font-mono text-xs font-semibold text-accent-600">{String(i + 1).padStart(2, '0')}</div>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
-            </div>
+              {i < steps.length - 1 && (
+                <div aria-hidden className="hidden shrink-0 items-center justify-center px-1 text-accent-300 sm:flex">
+                  <ArrowRight size={24} />
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
       </section>

@@ -10,8 +10,14 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-04
+
 ### Changed
 
+- **Landing refresh.** The hero now *shows* the result: a before/after where your object photo (next
+  to the calibration token) becomes a **real 3D render** of the Gridfinity bin, with a pocket of the
+  exact same shape, under a catchy time-to-result headline. The "how it works" section reads as a
+  clear **3-step workflow** (big step numbers, sequence arrows), and the copy is tightened.
 - **Détourage is now an explicit, on-demand selection (Photoshop-like).** Loading a photo only
   **detects the token** (for scale) — the object is no longer auto-segmented, so loading is faster
   and the preview stays calm. You **create** a selection — 🪄 *Detect object* (the magic wand: method
