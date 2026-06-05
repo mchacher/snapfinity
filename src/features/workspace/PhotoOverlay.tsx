@@ -326,6 +326,58 @@ export function PhotoOverlay({
     setPan({ x: 0, y: 0 });
     setPanMode(false);
   };
+  // Keep the freshest zoom + zoom setter reachable from the native wheel listener (attached once).
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const zoomToRef = useRef(setZoomTo);
+  zoomToRef.current = setZoomTo;
+  // Cursor feedback for the mouse-navigation shortcuts: a closed grab hand while panning with the
+  // middle button, a +/- magnifier while zooming with the wheel (cleared shortly after the wheel
+  // stops). Applied as a class on the wrapper so it forces the cursor over the tool overlays too.
+  const [navCursor, setNavCursor] = useState<null | 'grabbing' | 'zoom-in' | 'zoom-out'>(null);
+  // Middle mouse button = pan, for ANY tool. Handled in the capture phase on the wrapper so it
+  // pre-empts whichever tool overlay owns the pointer (Points / brush / lasso / crop): those never
+  // see the press. Pan is clamped, so at zoom 1 there's simply nothing to move.
+  const midPan = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const wheelCursorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Wheel = zoom in / out, for ANY tool. A native, non-passive listener so preventDefault actually
+  // stops the page from scrolling (React registers onWheel as passive, where preventDefault is a no-op).
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const inward = e.deltaY < 0;
+      zoomToRef.current(zoomRef.current + (inward ? 0.5 : -0.5));
+      setNavCursor(inward ? 'zoom-in' : 'zoom-out');
+      if (wheelCursorTimer.current) clearTimeout(wheelCursorTimer.current);
+      wheelCursorTimer.current = setTimeout(() => setNavCursor(midPan.current ? 'grabbing' : null), 350);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (wheelCursorTimer.current) clearTimeout(wheelCursorTimer.current);
+    };
+  }, []);
+  const onWrapPointerDownCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 1) return; // middle button only
+    e.preventDefault();
+    e.stopPropagation();
+    midPan.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+    setNavCursor('grabbing');
+    wrapRef.current?.setPointerCapture(e.pointerId);
+  };
+  const onWrapPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const s = midPan.current;
+    if (s) setPan(clampPan(zoom, s.px + (e.clientX - s.x), s.py + (e.clientY - s.y)));
+  };
+  const onWrapPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!midPan.current) return;
+    midPan.current = null;
+    setNavCursor(null);
+    wrapRef.current?.releasePointerCapture?.(e.pointerId);
+  };
+  const navCursorClass = navCursor ? `nav-cursor-${navCursor}` : '';
   useLayoutEffect(() => {
     const parent = wrapRef.current?.parentElement;
     if (!parent || width <= 0 || height <= 0) return;
@@ -584,12 +636,16 @@ export function PhotoOverlay({
     <>
     <div
       ref={wrapRef}
-      className="relative max-h-full max-w-full"
+      className={`relative max-h-full max-w-full ${navCursorClass}`}
       style={{
         ...(fit ? { width: fit.w, height: fit.h } : { aspectRatio: `${width} / ${height}` }),
         transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         transformOrigin: 'center center',
       }}
+      onPointerDownCapture={onWrapPointerDownCapture}
+      onPointerMove={onWrapPointerMove}
+      onPointerUp={onWrapPointerUp}
+      onPointerLeave={onWrapPointerUp}
     >
       <canvas
         ref={ref}

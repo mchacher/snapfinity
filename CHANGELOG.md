@@ -10,6 +10,13 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+### Added
+
+- **Mouse navigation over the photo.** The wheel zooms in and out and the middle mouse button pans,
+  both working whatever tool is active (the Points editor included), so you can zoom into a tight
+  spot and reposition without leaving what you were doing. The cursor reflects it: a closed grab hand
+  while panning, a +/- magnifier while zooming.
+
 ### Fixed
 
 - **Contour adjustments after editing points.** Smoothing and edge straightening kept applying only

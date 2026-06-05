@@ -81,3 +81,22 @@ body {
 .slider:hover::-moz-range-thumb {
   background: var(--color-accent-700);
 }
+
+/*
+ * Mouse-navigation cursor feedback over the photo (see PhotoOverlay): a closed grab hand while
+ * panning with the middle button, a +/- magnifier while zooming with the wheel. Forced onto every
+ * descendant with !important because the tool overlays (Points editor, brush) set their own cursor
+ * inline, which a plain class can't override.
+ */
+.nav-cursor-grabbing,
+.nav-cursor-grabbing * {
+  cursor: grabbing !important;
+}
+.nav-cursor-zoom-in,
+.nav-cursor-zoom-in * {
+  cursor: zoom-in !important;
+}
+.nav-cursor-zoom-out,
+.nav-cursor-zoom-out * {
+  cursor: zoom-out !important;
+}
