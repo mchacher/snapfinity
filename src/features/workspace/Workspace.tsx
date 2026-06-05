@@ -276,7 +276,20 @@ export function Workspace({ onHome }: { onHome?: () => void }) {
   );
   // A hand-edited contour (spec 035) takes over from the auto one — for the overlay, offset,
   // pocket and PDF alike. Manual wins until it's reset or the framing/photo changes (cleared above).
-  const contour = editedContour ?? autoContour;
+  // Smoothing + straighten are POST-FILTERS: they must keep working after you've moved points, so the
+  // edited node polygon runs through the SAME refine as the auto contour. At smoothing 0 refineContour
+  // returns the nodes unchanged, so the slider has a clean range over your edits (0 = exact nodes,
+  // >0 = rounded). Previously editedContour fed downstream raw — which is why Lissage / Redresser did
+  // nothing once a point had been moved.
+  const contour = useMemo(() => {
+    if (!editedContour) return autoContour;
+    if (editedContour.length < 3) return editedContour;
+    return refineContour(editedContour, {
+      smoothingFactor: params.smoothingFactor,
+      straighten: params.straightenToleranceDeg > 0,
+      straightenToleranceDeg: params.straightenToleranceDeg,
+    });
+  }, [editedContour, autoContour, params.smoothingFactor, params.straightenToleranceDeg]);
   // Contour editor: enter seeds an editable polygon from the current auto contour; reset re-seeds
   // from auto (discarding manual edits); clear drops the override back to the pure auto contour.
   const enterContourEdit = () => {

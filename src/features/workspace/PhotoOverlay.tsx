@@ -125,8 +125,12 @@ function ContourEditor({
   }, []);
 
   const displayScale = dispW > 0 ? dispW / width : 1;
-  const nodeR = 4.4 / displayScale; // ~4.4 px on-screen handle radius (25% bigger), in image px
-  const hitR = 14 / displayScale; // ~14 px on-screen grab radius (kept generous for easy grabbing)
+  const nodeR = 4.4 / displayScale; // ~4.4 px on-screen handle radius, in image px
+  // Tight grab radius (tracks the handle) so a SHORT edge between two close nodes stays clickable to
+  // INSERT on; edge insertion + a forgiving grab keep the larger reach. Without this, either node's
+  // generous radius swallowed the whole edge and inserting between close points was impossible.
+  const grabR = 9 / displayScale; // ~9 px on-screen: on-handle grab
+  const hitR = 14 / displayScale; // ~14 px on-screen: edge-insert / forgiving grab reach
   const view = drag ? drag.nodes : nodes;
 
   const toImg = (clientX: number, clientY: number): Point2D => {
@@ -136,13 +140,29 @@ function ContourEditor({
   const onDown = (e: ReactPointerEvent<SVGSVGElement>) => {
     svgRef.current?.setPointerCapture(e.pointerId);
     const p = toImg(e.clientX, e.clientY);
-    const ni = nearestNode(nodes, p, hitR);
-    if (ni >= 0) {
-      setDrag({ idx: ni, nodes });
+    // 1) On a handle → grab it. Tight radius so two close nodes don't swallow the edge between them.
+    const onHandle = nearestNode(nodes, p, grabR);
+    if (onHandle >= 0) {
+      setDrag({ idx: onHandle, nodes });
       return;
     }
+    // 2) On an edge interior (projection clear of BOTH endpoints) → insert a point there. This is
+    //    what makes inserting between two close nodes work: the short edge's middle stays clickable.
     const seg = nearestSegment(nodes, p, hitR);
-    if (seg) setDrag({ idx: seg.index + 1, nodes: insertNode(nodes, seg.index, seg.point) });
+    if (seg) {
+      const a = nodes[seg.index];
+      const b = nodes[(seg.index + 1) % nodes.length];
+      const clearOfEnds =
+        Math.hypot(seg.point[0] - a[0], seg.point[1] - a[1]) > grabR &&
+        Math.hypot(seg.point[0] - b[0], seg.point[1] - b[1]) > grabR;
+      if (clearOfEnds) {
+        setDrag({ idx: seg.index + 1, nodes: insertNode(nodes, seg.index, seg.point) });
+        return;
+      }
+    }
+    // 3) Near a node but just off the handle (and not on an edge interior) → forgiving grab.
+    const near = nearestNode(nodes, p, hitR);
+    if (near >= 0) setDrag({ idx: near, nodes });
   };
   const onMove = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (!drag) return;
