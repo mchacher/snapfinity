@@ -10,6 +10,8 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-05
+
 ### Added
 
 - **Mouse navigation over the photo.** The wheel zooms in and out and the middle mouse button pans,
@@ -112,6 +114,7 @@ like the object. It runs **100 % in the browser**: the photo never leaves the de
 
 See [`docs/specs-index.md`](docs/specs-index.md) for the full per-feature history (specs 001–032).
 
-[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mchacher/snapfinity/compare/v1.1.1...v1.2.0
 [1.0.1]: https://github.com/mchacher/snapfinity/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mchacher/snapfinity/releases/tag/v1.0.0
