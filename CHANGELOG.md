@@ -10,6 +10,26 @@ Cutting a release moves the `[Unreleased]` entries under a new dated version hea
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-05
+
+### Added
+
+- **Mouse navigation over the photo.** The wheel zooms in and out and the middle mouse button pans,
+  both working whatever tool is active (the Points editor included), so you can zoom into a tight
+  spot and reposition without leaving what you were doing. The cursor reflects it: a closed grab hand
+  while panning, a +/- magnifier while zooming.
+
+### Fixed
+
+- **Contour adjustments after editing points.** Smoothing and edge straightening kept applying only
+  to the automatic outline, so once you moved a point the Lissage and Redresser sliders did nothing.
+  The hand-edited outline now runs through the same refine pass: the sliders apply to your edits (at
+  0 they leave your nodes exactly as placed).
+- **Inserting a point between two close nodes.** The generous node grab radius swallowed short edges,
+  so a click between two nearby points always grabbed a node instead of adding one. Grabbing now uses
+  a tight on-handle radius, and a click on an edge's interior inserts a point even on a short edge.
+  Zoom in for very tight clusters.
+
 ## [1.1.1] - 2026-06-05
 
 ### Changed
@@ -94,6 +114,7 @@ like the object. It runs **100 % in the browser**: the photo never leaves the de
 
 See [`docs/specs-index.md`](docs/specs-index.md) for the full per-feature history (specs 001–032).
 
-[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/mchacher/snapfinity/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mchacher/snapfinity/compare/v1.1.1...v1.2.0
 [1.0.1]: https://github.com/mchacher/snapfinity/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mchacher/snapfinity/releases/tag/v1.0.0

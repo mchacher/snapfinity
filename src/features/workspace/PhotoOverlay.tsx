@@ -125,8 +125,12 @@ function ContourEditor({
   }, []);
 
   const displayScale = dispW > 0 ? dispW / width : 1;
-  const nodeR = 4.4 / displayScale; // ~4.4 px on-screen handle radius (25% bigger), in image px
-  const hitR = 14 / displayScale; // ~14 px on-screen grab radius (kept generous for easy grabbing)
+  const nodeR = 4.4 / displayScale; // ~4.4 px on-screen handle radius, in image px
+  // Tight grab radius (tracks the handle) so a SHORT edge between two close nodes stays clickable to
+  // INSERT on; edge insertion + a forgiving grab keep the larger reach. Without this, either node's
+  // generous radius swallowed the whole edge and inserting between close points was impossible.
+  const grabR = 9 / displayScale; // ~9 px on-screen: on-handle grab
+  const hitR = 14 / displayScale; // ~14 px on-screen: edge-insert / forgiving grab reach
   const view = drag ? drag.nodes : nodes;
 
   const toImg = (clientX: number, clientY: number): Point2D => {
@@ -136,13 +140,29 @@ function ContourEditor({
   const onDown = (e: ReactPointerEvent<SVGSVGElement>) => {
     svgRef.current?.setPointerCapture(e.pointerId);
     const p = toImg(e.clientX, e.clientY);
-    const ni = nearestNode(nodes, p, hitR);
-    if (ni >= 0) {
-      setDrag({ idx: ni, nodes });
+    // 1) On a handle → grab it. Tight radius so two close nodes don't swallow the edge between them.
+    const onHandle = nearestNode(nodes, p, grabR);
+    if (onHandle >= 0) {
+      setDrag({ idx: onHandle, nodes });
       return;
     }
+    // 2) On an edge interior (projection clear of BOTH endpoints) → insert a point there. This is
+    //    what makes inserting between two close nodes work: the short edge's middle stays clickable.
     const seg = nearestSegment(nodes, p, hitR);
-    if (seg) setDrag({ idx: seg.index + 1, nodes: insertNode(nodes, seg.index, seg.point) });
+    if (seg) {
+      const a = nodes[seg.index];
+      const b = nodes[(seg.index + 1) % nodes.length];
+      const clearOfEnds =
+        Math.hypot(seg.point[0] - a[0], seg.point[1] - a[1]) > grabR &&
+        Math.hypot(seg.point[0] - b[0], seg.point[1] - b[1]) > grabR;
+      if (clearOfEnds) {
+        setDrag({ idx: seg.index + 1, nodes: insertNode(nodes, seg.index, seg.point) });
+        return;
+      }
+    }
+    // 3) Near a node but just off the handle (and not on an edge interior) → forgiving grab.
+    const near = nearestNode(nodes, p, hitR);
+    if (near >= 0) setDrag({ idx: near, nodes });
   };
   const onMove = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (!drag) return;
@@ -306,6 +326,58 @@ export function PhotoOverlay({
     setPan({ x: 0, y: 0 });
     setPanMode(false);
   };
+  // Keep the freshest zoom + zoom setter reachable from the native wheel listener (attached once).
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const zoomToRef = useRef(setZoomTo);
+  zoomToRef.current = setZoomTo;
+  // Cursor feedback for the mouse-navigation shortcuts: a closed grab hand while panning with the
+  // middle button, a +/- magnifier while zooming with the wheel (cleared shortly after the wheel
+  // stops). Applied as a class on the wrapper so it forces the cursor over the tool overlays too.
+  const [navCursor, setNavCursor] = useState<null | 'grabbing' | 'zoom-in' | 'zoom-out'>(null);
+  // Middle mouse button = pan, for ANY tool. Handled in the capture phase on the wrapper so it
+  // pre-empts whichever tool overlay owns the pointer (Points / brush / lasso / crop): those never
+  // see the press. Pan is clamped, so at zoom 1 there's simply nothing to move.
+  const midPan = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const wheelCursorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Wheel = zoom in / out, for ANY tool. A native, non-passive listener so preventDefault actually
+  // stops the page from scrolling (React registers onWheel as passive, where preventDefault is a no-op).
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const inward = e.deltaY < 0;
+      zoomToRef.current(zoomRef.current + (inward ? 0.5 : -0.5));
+      setNavCursor(inward ? 'zoom-in' : 'zoom-out');
+      if (wheelCursorTimer.current) clearTimeout(wheelCursorTimer.current);
+      wheelCursorTimer.current = setTimeout(() => setNavCursor(midPan.current ? 'grabbing' : null), 350);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (wheelCursorTimer.current) clearTimeout(wheelCursorTimer.current);
+    };
+  }, []);
+  const onWrapPointerDownCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 1) return; // middle button only
+    e.preventDefault();
+    e.stopPropagation();
+    midPan.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+    setNavCursor('grabbing');
+    wrapRef.current?.setPointerCapture(e.pointerId);
+  };
+  const onWrapPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const s = midPan.current;
+    if (s) setPan(clampPan(zoom, s.px + (e.clientX - s.x), s.py + (e.clientY - s.y)));
+  };
+  const onWrapPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!midPan.current) return;
+    midPan.current = null;
+    setNavCursor(null);
+    wrapRef.current?.releasePointerCapture?.(e.pointerId);
+  };
+  const navCursorClass = navCursor ? `nav-cursor-${navCursor}` : '';
   useLayoutEffect(() => {
     const parent = wrapRef.current?.parentElement;
     if (!parent || width <= 0 || height <= 0) return;
@@ -564,12 +636,16 @@ export function PhotoOverlay({
     <>
     <div
       ref={wrapRef}
-      className="relative max-h-full max-w-full"
+      className={`relative max-h-full max-w-full ${navCursorClass}`}
       style={{
         ...(fit ? { width: fit.w, height: fit.h } : { aspectRatio: `${width} / ${height}` }),
         transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         transformOrigin: 'center center',
       }}
+      onPointerDownCapture={onWrapPointerDownCapture}
+      onPointerMove={onWrapPointerMove}
+      onPointerUp={onWrapPointerUp}
+      onPointerLeave={onWrapPointerUp}
     >
       <canvas
         ref={ref}
